@@ -21,18 +21,51 @@ Incoming Bitcoin payments are directly forwarded and credited to your Lightning 
 
 == Installation ==
 
-1. Login to WordPress Admin (Paid Memberships Pro plugin should be installed already).
+## Install Paid Memberships Pro plugin via Github ##
 
-2. Navigate to Plugins > Add Plugins > Upload Plugin and Select coinsnap-pmpro.zip.
+Obtain the plugin by clicking on the green “Clone or download” button and selecting “Download ZIP” from the dropdown menu. After you have downloaded the ZIP file from the Github page, log in to your WordPress admin.
 
-3. Install And activate plugin.
+![](https://github.com/Coinsnap/Coinsnap-for-PaidMembershipsPro/blob/main/assets/upload.png)
 
-4. Navigate to Memberships > Settings > Payment Gateway & SSL and select "Coinsnap".
+#### (1) Access to the plugin area ####
+On the WordPress login page, you will find the “Plugin” section on the left-hand side. Navigate to the “Add New Plugin” subsection.
 
-5. Enter Store ID and API Key.
+#### (2) “Upload file” button ####
+Click on the “Upload file” button to start the process. To do this, you need to upload the ZIP file that you previously received from our GitHub page.
 
-6. Synchronize invoice statuses for Expired, Settled, Processing.
+#### (3) Select and upload ZIP file ####
+Select the “Select file” option and select the ZIP file from your computer. This step ensures seamless integration of the plugin into your WordPress environment.
 
-7. Select currency from the list. Not that currently Coinsnap supports these currencies: "EUR", "USD", "CAD", "JPY", "GBP", "CHF".
+![](https://github.com/Coinsnap/Coinsnap-for-PaidMembershipsPro/blob/main/assets/activation.png)
 
-8. Click "Save settings".
+After you have successfully uploaded the ZIP file, navigate to the “Installed plugins” section and make sure that the “Coinsnap for Paid Memberships Pro” plugin is activated.
+
+![](https://github.com/Coinsnap/Coinsnap-for-PaidMembershipsPro/blob/main/assets/coinsnap-store.png)
+
+Enter your login details in your Coinsnap app and navigate to the settings. Look for the “Store settings” section in the settings, where you can access your store ID and API key. Copy these login details for future use.
+
+![](https://github.com/Coinsnap/Coinsnap-for-PaidMembershipsPro/blob/main/assets/gateway-ssl.png)
+
+#### (1) Open the “Memberships” section ####
+Find the “Memberships” section on the left-hand side of the WordPress login page and go to the “Settings” subsection.
+
+#### (2) Navigate to the “Payment Gateway & SSL” section ####
+Within the “Settings” subsection on the right-hand side, search for the “Payment Gateway & SSL” section and open it. Click on it to continue with the configuration. Scroll down and select Coinsnap.
+
+![](https://github.com/Coinsnap/Coinsnap-for-PaidMembershipsPro/blob/main/assets/gateway.png)
+
+#### (1) Enter Shop-ID ####
+Retrieve the store ID from the previously copied information within the Coinsnap app. Enter this information in the first field provided.
+
+#### (2) Enter API key ####
+Get the API key from the information previously copied into the Coinsnap app. Enter this information in the second field provided. Make sure to synchronise the invoice statuses for “Expired”, “Billed” and “In Progress” to maintain accurate and up-to-date records.
+
+![](https://github.com/Coinsnap/Coinsnap-for-PaidMembershipsPro/blob/main/assets/currency-tax.png)
+
+#### (1) Currency and tax configuration #### 
+Select the desired currency from the available list. Please note that Coinsnap does not currently support the following currencies: “EUR”, “USD”, “CAD”, “JPY”, “GBP” and “CHF”.
+
+#### (2) Confirm the changes ####
+To apply and save all changes, click on the blue button at the end of the process.
+
+You have successfully completed the integration with the Coinsnap app!
