@@ -1,4 +1,6 @@
-# Bitcoin and Ligtning payments for Paid Memberships Pro in WordPress
+![Image of Coinsnap for paid meberships pro](https://coinsnap.io/wp-content/uploads/2024/01/coinsnap-for-paidmembershippro.png)
+# Coinsnap for Paid Memberships Pro #
+## Bitcoin and Ligtning payments for Paid Memberships Pro in WordPress ##
 
 === Coinsnap for Paid Memberships Pro 1.1 ===
 Contributors: coinsnap
