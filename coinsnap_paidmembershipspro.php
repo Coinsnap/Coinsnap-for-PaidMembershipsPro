@@ -1,16 +1,30 @@
 <?php
 /*
-Plugin Name: 		Coinsnap for Paid Memberships Pro
-Plugin URI: 		https://coinsnap.io
-Description: 		Provides a <a href="https://coinsnap.io">Coinsnap</a>  - Bitcoin + Lightning Payment Gateway for <a href="https://wordpress.org/plugins/paid-memberships-pro/">Paid Memberships Pro </a>.
-Version: 			1.1
-Author: 			Coinsnap
-Author URI: 		https://coinsnap.io
-*/
+ * Plugin Name:     Coinsnap for Paid Memberships Pro
+ * Plugin URI:      https://www.coinsnap.io
+ * Description:     Provides a <a href="https://coinsnap.io">Coinsnap</a>  - Bitcoin + Lightning Payment Gateway for <a href="https://wordpress.org/plugins/paid-memberships-pro/">Paid Memberships Pro</a>.
+ * Version:         1.0.0
+ * Author:          Coinsnap
+ * Author URI:      https://coinsnap.io/
+ * Text Domain:     coinsnap-for-paidmembershipspro
+ * Domain Path:     /languages
+ * Requires PHP:    7.4
+ * Tested up to:    6.4.3
+ * Requires at least: 5.2
+ * License:         GPL2
+ * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
+ *
+ * Network:         true
+ */ 
 
+if (!defined( 'ABSPATH' )) exit;
+if (!class_exists('PMProGateway')) return;
 
-if (!defined( 'ABSPATH' )) exit; // Exit if accessed directly
-if (!class_exists('PMProGateway')) return;		
+define( 'SERVER_PHP_VERSION', '7.4' );
+define( 'COINSNAP_VERSION', '1.0.0' );
+define( 'COINSNAP_REFERRAL_CODE', 'D12876' );
+define( 'COINSNAP_PLUGIN_ID', 'coinsnap-for-paidmembershipspro' );
+define( 'COINSNAP_SERVER_URL', 'https://app.coinsnap.io' );
 
 add_action('init', array('PMProGateway_coinsnap', 'init'));	
 add_action('init', array('PMProGateway_coinsnap', 'process_webhook'));	
@@ -368,14 +382,14 @@ class PMProGateway_coinsnap extends PMProGateway
 		    	$client =new \Coinsnap\Client\Invoice(self::getApiUrl(), self::getApiKey());
 		    	$camount = \Coinsnap\Util\PreciseNumber::parseFloat($amount,2);
 		    	$invoice = $client->createInvoice(
-				    self::getStoreId(),  
+                            self::getStoreId(),  
 			    	$pmpro_currency,
 			    	$camount,
 			    	$order->id,
 			    	$buyerEmail,
 			    	$buyerName, 
 			    	$redirectUrl,
-			    	'',     
+			    	COINSNAP_REFERRAL_CODE,     
 			    	$metadata,
 			    	$checkoutOptions
 		    	);
