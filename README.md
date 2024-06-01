@@ -42,7 +42,7 @@ Select the “Select file” option and select the ZIP file from your computer. 
 
 After you have successfully uploaded the ZIP file, navigate to the “Installed plugins” section and make sure that the “Coinsnap for Paid Memberships Pro” plugin is activated.
 
-![](https://coinsnap.io/wp-content/uploads/2023/11/Screenshot-2023-11-30-at-10.22.46.png)
+![](https://coinsnap.io/wp-content/uploads/2023/11/Screenshot-2024-05-27-at-08.16.52.png)
 
 Enter your login details in your Coinsnap app and navigate to the settings. Look for the “Store settings” section in the settings, where you can access your store ID and API key. Copy these login details for future use.
 
