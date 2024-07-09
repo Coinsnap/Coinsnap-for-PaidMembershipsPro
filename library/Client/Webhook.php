@@ -1,18 +1,16 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Coinsnap\Client;
 
-class Webhook extends AbstractClient
-{
+class Webhook extends AbstractClient {
     /**
      * @param string $storeId
      * @return \Coinsnap\Result\WebhookList
      */
     public function getStoreWebhooks(string $storeId): \Coinsnap\Result\WebhookList
     {
-        $url = $this->getApiUrl() . ''.COINSNAP_SERVER_PATH.'/' . urlencode($storeId) . '/webhooks';
+        $url = $this->getApiUrl() . COINSNAP_SERVER_PATH.'/' . urlencode($storeId) . '/webhooks';
         $headers = $this->getRequestHeaders();
         $method = 'GET';
         $response = $this->getHttpClient()->request($method, $url, $headers);
@@ -28,7 +26,7 @@ class Webhook extends AbstractClient
 
     public function getWebhook(string $storeId, string $webhookId): \Coinsnap\Result\Webhook
     {
-        $url = $this->getApiUrl() . ''.COINSNAP_SERVER_PATH.'/' . urlencode($storeId) . '/webhooks/' . urlencode($webhookId);
+        $url = $this->getApiUrl() . COINSNAP_SERVER_PATH.'/' . urlencode($storeId) . '/webhooks/' . urlencode($webhookId);
         $headers = $this->getRequestHeaders();
         $method = 'GET';
         $response = $this->getHttpClient()->request($method, $url, $headers);
@@ -44,38 +42,30 @@ class Webhook extends AbstractClient
 
     
 
-    public function createWebhook(string $storeId, string $url, ?array $specificEvents, ?string $secret): \Coinsnap\Result\WebhookCreated { //bool $enabled = true,bool $automaticRedelivery = true
-        $data = [
-            //'enabled' => $enabled,
-            //'automaticRedelivery' => $automaticRedelivery,
-            'url' => $url
-        ];
-
-        if ($specificEvents === null) {
-            $data['authorizedEvents'] = ['everything' => true];
-        } 
-        elseif (count($specificEvents) === 0) {
-            throw new \InvalidArgumentException('Argument $specificEvents should be NULL or contains at least 1 item.');
-        } 
-        else {
-            $data['authorizedEvents'] = ['everything' => false,'specificEvents' => $specificEvents];
+    public function createWebhook(string $storeId, string $url, ?array $specificEvents, ?string $secret): \Coinsnap\Result\WebhookCreated {
+        $data = ['url' => $url];
+        
+        if(isset($specificEvents) && count($specificEvents) > 0){
+            $data['events'] = $specificEvents;
         }
-
+        
         if ($secret === '') {
             throw new \InvalidArgumentException('Argument $secret should be NULL (let Server auto-generate a secret) or you should provide a long and safe secret string.');
         } 
         elseif ($secret !== null) $data['secret'] = $secret;
 
-        $url = $this->getApiUrl() . ''.COINSNAP_SERVER_PATH.'/' . urlencode($storeId) . '/webhooks';
+        $url = $this->getApiUrl() . COINSNAP_SERVER_PATH.'/' . urlencode($storeId) . '/webhooks';
         $headers = $this->getRequestHeaders();
+        
         $method = 'POST';
-        $response = $this->getHttpClient()->request($method, $url, $headers, wp_json_encode($data, JSON_THROW_ON_ERROR));
+        $response = $this->getHttpClient()->request($method, $url, $headers, json_encode($data, JSON_THROW_ON_ERROR));	
 
         if ($response->getStatus() === 200) {
             $data = json_decode($response->getBody(), true, 512, JSON_THROW_ON_ERROR);
-            return new \Coinsnap\Result\WebhookCreated($data);
+            $result = new \Coinsnap\Result\WebhookCreated($data);
+            return $result;
         } else {
-            throw $this->getExceptionByStatusCode(esc_html($method), esc_url($url), $response);
+            throw $this->getExceptionByStatusCode(esc_html($method), $url, $response);
         }
     }
 
@@ -85,37 +75,19 @@ class Webhook extends AbstractClient
      * @return \Coinsnap\Result\Webhook
      * @throws \JsonException
      */
-    public function updateWebhook(
-        string $storeId,
-        string $url,
-        string $webhookId,
-        ?array $specificEvents,
-        bool $enabled = true,
-        bool $automaticRedelivery = true,
-        ?string $secret = null
-    ): \Coinsnap\Result\Webhook {
+    public function updateWebhook(string $storeId, string $url, string $webhookId, ?array $specificEvents,  bool $enabled = true, ?string $secret = null): \Coinsnap\Result\Webhook {
         $data = [
           'enabled' => $enabled,
-          'automaticRedelivery' => $automaticRedelivery,
           'url' => $url,
           'secret' => $secret
         ];
 
         // Specific events or all.
-        if ($specificEvents === null) {
-            $data['authorizedEvents'] = [
-              'everything' => true
-            ];
-        } elseif (count($specificEvents) === 0) {
-            throw new \InvalidArgumentException('Argument $specificEvents should be NULL or contains at least 1 item.');
-        } else {
-            $data['authorizedEvents'] = [
-              'everything' => false,
-              'specificEvents' => $specificEvents
-            ];
+        if(isset($specificEvents) && count($specificEvents) > 0){
+            $data['events'] = $specificEvents;
         }
 
-        $url = $this->getApiUrl() . ''.COINSNAP_SERVER_PATH.'/' . urlencode($storeId) . '/webhooks/' . urlencode($webhookId);
+        $url = $this->getApiUrl() . COINSNAP_SERVER_PATH.'/' . urlencode($storeId) . '/webhooks/' . urlencode($webhookId);
         $headers = $this->getRequestHeaders();
         $method = 'PUT';
         $response = $this->getHttpClient()->request($method, $url, $headers, wp_json_encode($data, JSON_THROW_ON_ERROR));
@@ -141,7 +113,7 @@ class Webhook extends AbstractClient
 
     public function deleteWebhook(string $storeId, string $webhookId): void
     {
-        $url = $this->getApiUrl() . ''.COINSNAP_SERVER_PATH.'/' . urlencode($storeId) . '/webhooks/' . urlencode($webhookId);
+        $url = $this->getApiUrl() . COINSNAP_SERVER_PATH.'/' . urlencode($storeId) . '/webhooks/' . urlencode($webhookId);
         $headers = $this->getRequestHeaders();
         $method = 'DELETE';
         $response = $this->getHttpClient()->request($method, $url, $headers);
@@ -158,7 +130,7 @@ class Webhook extends AbstractClient
      */
     public function getWebhooks(string $storeId): array
     {
-        $url = $this->getApiUrl() . ''.COINSNAP_SERVER_PATH.'/' . urlencode($storeId) . '/webhooks';
+        $url = $this->getApiUrl() . COINSNAP_SERVER_PATH.'/' . urlencode($storeId) . '/webhooks';
         $headers = $this->getRequestHeaders();
         $method = 'GET';
         $response = $this->getHttpClient()->request($method, $url, $headers);
