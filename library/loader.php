@@ -8,7 +8,7 @@ spl_autoload_register(
         }
 
         else {
-            $filePath = __DIR__ .'/'. str_replace([$libName, '\\'], ['', DIRECTORY_SEPARATOR], $className).'.php';
+            $filePath = __DIR__ . str_replace([$libName, '\\'], ['', DIRECTORY_SEPARATOR], $className).'.php';
                 
             
             if(file_exists($filePath)) {

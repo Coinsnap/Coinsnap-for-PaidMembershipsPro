@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Coinsnap\Client;
 
-use Coinsnap\Result\InvoicePaymentMethod;
 use Coinsnap\Util\PreciseNumber;
 
 class Invoice extends AbstractClient{
@@ -24,8 +23,8 @@ class Invoice extends AbstractClient{
         $method = 'POST';
 
         // Prepare metadata.
-        if(!isset($metaData['orderNumber']) && !empty($orderId)) $metaData['orderNumber'] = $orderId;
-        if(!isset($metaData['customerName']) && !empty($customerName)) $metaData['customerName'] = $customerName;
+        if(!isset($metaData['orderNumber']) && !empty($orderId)){ $metaData['orderNumber'] = $orderId; }
+        if(!isset($metaData['customerName']) && !empty($customerName)){ $metaData['customerName'] = $customerName; }
         
         $body_array = array(
             'amount' => $amount !== null ? $amount->__toString() : null,

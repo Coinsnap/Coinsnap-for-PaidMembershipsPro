@@ -9,16 +9,16 @@ use Coinsnap\WC\Helper\Logger;
 /**
  * HTTP Client using cURL to communicate.
  */
-class wpRemoteClient implements ClientInterface {
+class WPRemoteClient implements ClientInterface {
     
-    protected $wpRemoteOptions = [];
+    protected $WPRemoteOptions = [];
 
     /**
      * Adding any additional options set.
      * @return void
      */
     protected function initWpRemote(){
-        if (count($this->wpRemoteOptions) > 0) {
+        if (count($this->WPRemoteOptions) > 0) {
             
         }
     }
@@ -28,21 +28,21 @@ class wpRemoteClient implements ClientInterface {
      * @return void
      */
     public function setWpRemoteOptions(array $options){
-        $this->wpRemoteOptions = $options;
+        $this->WPRemoteOptions = $options;
     }
 
     public function request(string $method,string $url,array $headers = [],string $body = ''): ResponseInterface {
         
         $ch = $this->initWpRemote();
         
-        $wpRemoteArgs = array(
+        $WPRemoteArgs = array(
             'body' => $body,
             'method' => $method,
             'timeout' => 5,
             'headers' => $headers,
         );
         
-        $response = wp_remote_request( $url, $wpRemoteArgs );
+        $response = wp_remote_request( $url, $WPRemoteArgs );
         
         if(is_wp_error( $response ) ) {
             $errorMessage = $response->get_error_message();
