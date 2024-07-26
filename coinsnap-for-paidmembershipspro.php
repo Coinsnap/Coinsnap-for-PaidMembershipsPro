@@ -1,25 +1,39 @@
 <?php
 /*
-Plugin Name: 		Coinsnap for Paid Memberships Pro
-Plugin URI: 		https://coinsnap.io
-Description: 		Provides a <a href="https://coinsnap.io">Coinsnap</a>  - Bitcoin + Lightning Payment Gateway for <a href="https://wordpress.org/plugins/paid-memberships-pro/">Paid Memberships Pro </a>.
-Version: 			1.1
-Author: 			Coinsnap
-Author URI: 		https://coinsnap.io
-*/
+ * Plugin Name:     Coinsnap for Paid Memberships Pro
+ * Description:     Provides a <a href="https://coinsnap.io">Coinsnap</a>  - Bitcoin + Lightning Payment Gateway for Paid Memberships Pro.
+ * Version:         1.0.0
+ * Author:          Coinsnap
+ * Author URI:      https://coinsnap.io/
+ * Text Domain:     coinsnap-for-paidmembershipspro
+ * Domain Path:     /languages
+ * Requires PHP:    7.4
+ * Tested up to:    6.6
+ * Requires at least: 5.2
+ * PMPro tested up to: 3.1
+ * License:         MIT
+ * License URI:     https://github.com/Coinsnap/coinsnap-woocommerce/blob/master/license.txt
+ *
+ * Network:         true
+ */ 
 
+if (!defined( 'ABSPATH' )) exit;
+if (!class_exists('PMProGateway')) return;
 
-if (!defined( 'ABSPATH' )) exit; // Exit if accessed directly
-if (!class_exists('PMProGateway')) return;		
+define( 'SERVER_PHP_VERSION', '7.4' );
+define( 'COINSNAP_VERSION', '1.0.0' );
+define( 'COINSNAP_REFERRAL_CODE', 'D12876' );
+define( 'COINSNAP_PLUGIN_ID', 'coinsnap-for-paidmembershipspro' );
+define( 'COINSNAP_SERVER_URL', 'https://app.coinsnap.io' );
+define( 'COINSNAP_API_PATH', '/api/v1/');
+define( 'COINSNAP_SERVER_PATH', 'stores' );
 
 add_action('init', array('PMProGateway_coinsnap', 'init'));	
 add_action('init', array('PMProGateway_coinsnap', 'process_webhook'));	
 add_filter('plugin_action_links', array('PMProGateway_coinsnap', 'plugin_action_links'), 10, 2 );
 
+require_once(dirname(__FILE__) . "/library/loader.php");
 
-require_once(dirname(__FILE__) . "/library/autoload.php");
-
-		
 class PMProGateway_coinsnap extends PMProGateway
 {
 		
@@ -34,7 +48,6 @@ class PMProGateway_coinsnap extends PMProGateway
 			
 			public static function init()
 			{
-				
 				add_filter('pmpro_gateways', array('PMProGateway_coinsnap', 'pmpro_gateways'));						
 				add_filter('pmpro_payment_options', array('PMProGateway_coinsnap', 'pmpro_payment_options'));
 				add_filter('pmpro_payment_option_fields', array('PMProGateway_coinsnap', 'pmpro_payment_option_fields'), 10, 2);
@@ -314,17 +327,14 @@ class PMProGateway_coinsnap extends PMProGateway
 				return true;
 			}
 			
-			
-				
-			
-			
 			static function pmpro_checkout_before_change_membership_level($user_id, $morder)
 			{
 				global $wpdb, $discount_code_id;
 				
 				
-				if(empty($morder))
-					return;
+				if(empty($morder)){
+                                    return;
+                                }
 				
 				$morder->user_id = $user_id;				
 				$morder->saveOrder();
@@ -337,45 +347,44 @@ class PMProGateway_coinsnap extends PMProGateway
 				$morder->Gateway->sendToCoinsnap($morder);
 			}
 
-			public function sendToCoinsnap($order){
-				global $pmpro_currency;	
+		public function sendToCoinsnap($order){
+                    global $pmpro_currency;	
+                    $webhook_url = self::get_webhook_url();
+                    
+                    if (! self::webhookExists(self::getStoreId(), self::getApiKey(), $webhook_url)){
+                        if (! self::registerWebhook(self::getStoreId(), self::getApiKey(),$webhook_url)) {
+                            echo "Unable to set Webhook url";
+                            exit;
+                        }
+                    }
 
-				$webhook_url = self::get_webhook_url();
-        
-        		if (! self::webhookExists(self::getStoreId(), self::getApiKey(), $webhook_url)){
-            		if (! self::registerWebhook(self::getStoreId(), self::getApiKey(),$webhook_url)) {
-             		echo "unable to set Webhook url";
-             		exit;
-            		}
-		        }      
-
-				$amount =  $order->InitialPayment;
-		    	$redirectUrl = esc_url(site_url().'/membership-confirmation/?level=').$order->membership_id;
+                            $amount =  $order->InitialPayment;
+                            $redirectUrl = esc_url(site_url().'/membership-confirmation/?level=').$order->membership_id;
             
-		    	$amount = round($amount, 2);
-		    	$buyerEmail = $order->Email;
+                            $amount = round($amount, 2);
+                            $buyerEmail = $order->Email;
 
-				$current_user = wp_get_current_user();
-		    	$buyerName =  $current_user->user_firstname . ' ' . $current_user->user_lastname;
+                            $current_user = wp_get_current_user();
+                            $buyerName =  $current_user->user_firstname . ' ' . $current_user->user_lastname;
 						    	
 
-	        	$metadata = [];
-    			$metadata['orderNumber'] = $order->id;
-		    	$metadata['customerName'] = $buyerName;
+                            $metadata = [];
+                            $metadata['orderNumber'] = $order->id;
+                            $metadata['customerName'] = $buyerName;
 
 		    	$checkoutOptions = new \Coinsnap\Client\InvoiceCheckoutOptions();
 		    	$checkoutOptions->setRedirectURL( $redirectUrl );
 		    	$client =new \Coinsnap\Client\Invoice(self::getApiUrl(), self::getApiKey());
 		    	$camount = \Coinsnap\Util\PreciseNumber::parseFloat($amount,2);
 		    	$invoice = $client->createInvoice(
-				    self::getStoreId(),  
+                            self::getStoreId(),  
 			    	$pmpro_currency,
 			    	$camount,
 			    	$order->id,
 			    	$buyerEmail,
 			    	$buyerName, 
 			    	$redirectUrl,
-			    	'',     
+			    	COINSNAP_REFERRAL_CODE,     
 			    	$metadata,
 			    	$checkoutOptions
 		    	);
@@ -384,7 +393,7 @@ class PMProGateway_coinsnap extends PMProGateway
 				wp_redirect($payurl);
 				exit;
 
-			}
+		}
 		
 
 		
@@ -402,37 +411,41 @@ class PMProGateway_coinsnap extends PMProGateway
 		}	
 	
 		public static function webhookExists(string $storeId, string $apiKey, string $webhook): bool {	
-			try {		
-				$whClient = new \Coinsnap\Client\Webhook( self::getApiUrl(), $apiKey );		
-				$Webhooks = $whClient->getWebhooks( $storeId );			
+                    try {		
+                        $whClient = new \Coinsnap\Client\Webhook( self::getApiUrl(), $apiKey );		
+                        $Webhooks = $whClient->getWebhooks( $storeId );			
 				
-				foreach ($Webhooks as $Webhook){					
-					//self::deleteWebhook($storeId,$apiKey, $Webhook->getData()['id']);
-					if ($Webhook->getData()['url'] == $webhook) return true;	
-				}
-			}catch (\Throwable $e) {			
-				return false;
+			foreach ($Webhooks as $Webhook){					
+                            //self::deleteWebhook($storeId,$apiKey, $Webhook->getData()['id']);
+                            if ($Webhook->getData()['url'] == $webhook){
+                                return true;
+                            }
 			}
-		
-			return false;
+                    }
+                    catch (\Throwable $e) {			
+                        return false;
+                    }
+                    return false;
 		}
-		public static function registerWebhook(string $storeId, string $apiKey, string $webhook): bool {	
-			try {			
-				$whClient = new \Coinsnap\Client\Webhook(self::getApiUrl(), $apiKey);
-				
-				$webhook = $whClient->createWebhook(
-					$storeId,   //$storeId
-					$webhook, //$url
-					self::WEBHOOK_EVENTS,   //$specificEvents
-					null    //$secret
-				);		
-				
-				return true;
-			} catch (\Throwable $e) {
-				return false;	
-			}
-	
-			return false;
+                
+		public static function registerWebhook(string $storeId, string $apiKey, string $webhook): bool {
+                    try {			
+                        echo "test2<br/>";
+        
+                        $whClient = new \Coinsnap\Client\Webhook(self::getApiUrl(), $apiKey);
+			$webhook = $whClient->createWebhook(
+                            $storeId,   //$storeId
+                            $webhook, //$url
+                            self::WEBHOOK_EVENTS,   //$specificEvents
+                            null    //$secret
+			);
+                        echo $webhook;
+                        return true;
+                    }
+                    catch (\Throwable $e) {
+                        return false;	
+                    }
+                    //return false;
 		}
 	
 		public static function deleteWebhook(string $storeId, string $apiKey, string $webhookid): bool {	    
