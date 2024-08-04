@@ -99,7 +99,7 @@ add_action('plugins_loaded', function (): void {
             //show our submit buttons?>
             <span id="pmpro_submit_span">
                 <input type="hidden" name="submit-checkout" value="1" />
-                <input type="submit" class="<?php echo pmpro_get_element_class( 'pmpro_btn pmpro_btn-submit-checkout', 'pmpro_btn-submit-checkout' ); ?>" value="<?php if($pmpro_requirebilling) { _e('Coinsnap - Bitcoin + Lightning', 'paid-memberships-pro' ); } else { _e('Submit and Confirm', 'paid-memberships-pro' );}?> &raquo;" />
+                <input type="submit" class="<?php echo esc_html(pmpro_get_element_class( 'pmpro_btn pmpro_btn-submit-checkout', 'pmpro_btn-submit-checkout' )); ?>" value="<?php if($pmpro_requirebilling) {  esc_html_e('Coinsnap - Bitcoin + Lightning', 'paid-memberships-pro' ); } else { esc_html_e('Submit and Confirm', 'paid-memberships-pro' );}?> &raquo;" />
             </span>
 	<?php
             return false;
@@ -344,8 +344,7 @@ add_action('plugins_loaded', function (): void {
 				return true;
 			}
 			
-			static function pmpro_checkout_before_change_membership_level($user_id, $morder)
-			{
+			static function pmpro_checkout_before_change_membership_level($user_id, $morder){
 				global $wpdb, $discount_code_id;
 				
 				
@@ -357,9 +356,9 @@ add_action('plugins_loaded', function (): void {
 				$morder->saveOrder();
 				
 				
-				if(!empty($discount_code_id))
-					$wpdb->query("INSERT INTO $wpdb->pmpro_discount_codes_uses (code_id, user_id, order_id, timestamp) VALUES('" . $discount_code_id . "', '" . $user_id . "', '" . $morder->id . "', now())");	
-				
+				if(!empty($discount_code_id)){
+                                    $wpdb->prepare("INSERT INTO $wpdb->pmpro_discount_codes_uses (code_id, user_id, order_id, timestamp) VALUES(%s, %s, %s, now())",$discount_code_id,$user_id,$morder->id);	
+                                }
 							
 				$morder->Gateway->sendToCoinsnap($morder);
 			}
@@ -452,7 +451,6 @@ add_action('plugins_loaded', function (): void {
                             self::WEBHOOK_EVENTS,   //$specificEvents
                             null    //$secret
 			);
-                        echo $webhook;
                         return true;
                     }
                     catch (\Throwable $e) {
