@@ -3,10 +3,10 @@ Contributors: coinsnap
 Tags:  Coinsnap, PaidMembershipsPro, Bitcoin, Lightning 
 Requires at least: 6.2
 Requires PHP: 7.4
-Tested up to: 6.5.5
+Tested up to: 6.6
 Stable tag: 1.0.0
-License: MIT
-License URI: https://github.com/Coinsnap/coinsnap-woocommerce/blob/master/license.txt
+License: GPL2
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 
 Bitcoin and Lightning payment processing with the Coinsnap add-on for PaidMembershipsPro Wordpress Plug-in.
