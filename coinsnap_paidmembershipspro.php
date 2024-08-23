@@ -54,6 +54,7 @@ function pmpro_gateway_notice(){?>
     <?php
 }
 
+add_action('init', array('PMProGateway_coinsnap', 'process_webhook'));
 add_action('plugins_loaded', function (): void {
     
     if (!class_exists('PMProGateway')) {
@@ -64,7 +65,7 @@ add_action('plugins_loaded', function (): void {
     require_once(dirname(__FILE__) . "/library/loader.php");
 
     add_action('init', array('PMProGateway_coinsnap', 'init'));	
-    add_action('init', array('PMProGateway_coinsnap', 'process_webhook'));	
+    	
     add_filter('plugin_action_links', array('PMProGateway_coinsnap', 'plugin_action_links'), 10, 2 );
 
     class PMProGateway_coinsnap extends PMProGateway {
@@ -99,20 +100,19 @@ add_action('plugins_loaded', function (): void {
             //show our submit buttons?>
             <span id="pmpro_submit_span">
                 <input type="hidden" name="submit-checkout" value="1" />
-                <input type="submit" class="<?php echo esc_html(pmpro_get_element_class( 'pmpro_btn pmpro_btn-submit-checkout', 'pmpro_btn-submit-checkout' )); ?>" value="<?php if($pmpro_requirebilling) {  esc_html_e('Coinsnap - Bitcoin + Lightning', 'paid-memberships-pro' ); } else { esc_html_e('Submit and Confirm', 'paid-memberships-pro' );}?> &raquo;" />
+                <input type="submit" class="<?php echo esc_html(pmpro_get_element_class( 'pmpro_btn pmpro_btn-submit-checkout', 'pmpro_btn-submit-checkout' )); ?>" value="<?php if($pmpro_requirebilling) {  esc_html_e('Coinsnap (Bitcoin + Lightning)', 'paid-memberships-pro' ); } else { esc_html_e('Submit and Confirm', 'paid-memberships-pro' );}?>" />
             </span>
 	<?php
             return false;
 	}
 
 	public static function process_webhook() {
-				
-            if ( null !== ( filter_input(INPUT_GET,'pmp-listener') ) || filter_input(INPUT_GET,'pmp-listener') !== 'coinsnap' ) {
+			
+            if ( null === ( filter_input(INPUT_GET,'pmp-listener') ) || filter_input(INPUT_GET,'pmp-listener') !== 'coinsnap' ) {
                 return;
             }
 				
-            $notify_json = file_get_contents('php://input');            
-				
+            $notify_json = file_get_contents('php://input');
             $notify_ar = json_decode($notify_json, true);
             $invoice_id = $notify_ar['invoiceId'];        
 				
@@ -147,6 +147,8 @@ add_action('plugins_loaded', function (): void {
 		$morder->getMembershipLevel();					
 		$morder->status = $order_status;	
 		$morder->saveOrder();
+                
+                
 				
 		if ($order_status == 'success'){
 
@@ -212,9 +214,9 @@ add_action('plugins_loaded', function (): void {
 	}
 			
 	public static function pmpro_gateways($gateways){
-				if(empty($gateways['coinsnap']))
+				if(empty($gateways['coinsnap'])){
 				$gateways = array_slice($gateways, 0, 1) + array("coinsnap" => __('Coinsnap', 'paid-memberships-pro')) + array_slice($gateways, 1);
-		
+                                }
 				return $gateways;
 	}
 		
