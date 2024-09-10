@@ -1,19 +1,72 @@
 === Coinsnap Bitcoin + Lightning payment plug-in 1.0.0 for PaidMembershipsPro ===
 Contributors: coinsnap
-Tags:  Coinsnap, PaidMembershipsPro, Bitcoin, Lightning 
+Tags:  Coinsnap, PaidMembershipsPro, Bitcoin, Lightning, Membership 
 Requires at least: 6.2
 Requires PHP: 7.4
-Tested up to: 6.6
+Tested up to: 6.6.1
 Stable tag: 1.0.0
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-
 Bitcoin and Lightning payment processing with the Coinsnap add-on for PaidMembershipsPro Wordpress Plug-in.
+
+* Paid Memberships Pro Demo Donation Page: https://paidmembershippro.coinsnap.org/
+* Blog Article: https://coinsnap.io/en/coinsnap-for-paid-memberships-pro-payment-plugin/
+* WordPress: https://wordpress.org/plugins/coinsnap-for-paidmembershipspro/
+* GitHub: https://github.com/Coinsnap/Coinsnap-for-PaidMembershipsPro
 
 == Description ==
 
 Coinsnap is a Lightning payment provider and offers a payment gateway for processing Bitcoin and Lightning payments. Website owner only needs a Lightning wallet with a lightning address to accept Bitcoin and Lightning payments on their website.
+
+If you sell restricted content and manage membership subscriptions with recurring payments based on Paid Memberships Pro for WordPress, then you can easily integrate payment processing via Bitcoin and Lightning with the Coinsnap plugin.
+
+= Features: =
+
+* **All you need is a Lightning Wallet with a Lightning address. [Here you can find an overview of the matching Lightning Wallets](https://coinsnap.io/en/lightning-wallet-with-lightning-address/)**
+
+* **Accept Bitcoin and Lightning payments** in your online store **without running your own technical infrastructure.** You do not need your own server, nor do you need to run your own Lightning Node.
+
+* **Quick and easy registration at Coinsnap**: Just enter your email address and your Lightning address – and you are ready to integrate the payment module and start selling for Bitcoin Lightning. You will find the necessary IDs and Keys here, too.
+
+* **100% protected privacy**:
+    * We do not collect personal data.
+    * For the registration you only need an e-mail address, which we will also use to inform you when we have received a payment.
+    * No other personal information is required as long as you request a withdrawal to a Lightning address or Bitcoin address.
+
+* **Only 1 % fees!**:
+    * No basic fee, no transaction fee, only 1% on the invoice amount with referrer code.
+    * Without referrer code the fee is 1.25%.
+    * Get a referrer code from our partners and customers and save 0.25% fee.
+
+* **No KYC needed**:
+    * Direct, P2P payments (instantly to your Lightning wallet)
+    * No intermediaries and paperwork
+    * Transaction information is only shared between you and your customer
+
+* **Sophisticated merchant’s admin dashboard in Coinsnap:**:
+    * See all your transactions at a glance
+    * Follow-up on individual payments
+    * See issues with payments
+    * Export reports
+
+* **A Bitcoin payment via Lightning offers significant advantages**:
+    * Lightning **payments are executed immediately.**
+    * Lightning **payments are credited directly to the recipient.**
+    * Lightning **payments are inexpensive.**
+    * Lightning **payments are guaranteed.** No chargeback risk for the merchant.
+    * Lightning **payments can be used worldwide.**
+    * Lightning **payments are perfect for micropayments.**
+
+* **Multilingual interface and support**: We speak your language
+
+= Documentation: =
+
+* [Coinsnap API (1.0) documentation](https://docs.coinsnap.io/)
+* [Frequently Asked Questions](https://coinsnap.io/en/faq/) 
+* [Terms and Conditions](https://coinsnap.io/en/general-terms-and-conditions/)
+* [Privacy Policy](https://coinsnap.io/en/privacy/)
+
 
 == Installation ==
 
@@ -106,7 +159,19 @@ https://github.com/Coinsnap/Coinsnap-for-PaidMembershipsPro/
 
 Plugin's page on Coinsnap website: https://coinsnap.io/en/
 
-== Screenshot ==
+== Screenshots ==
+
+1. Paid Memberships Pro Plugin
+2. Plugin downloading from Github repository
+3. Manual plugin installation
+4. Plugins list 
+5. Plugin settings
+6. Coinsnap store settings
+7. Currency and tax settings
+8. Coinsnap register
+9. E-mail address confirmation
+10. Connect website with Coinsnap
+11. QR code on the Bitcoin payment page
   
 == Changelog ==
 = 1.0 :: 2024-01-20 =
