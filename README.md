@@ -2,28 +2,34 @@
 ![Image of Coinsnap for paid meberships pro](https://coinsnap.io/wp-content/uploads/2024/01/coinsnap-for-paidmembershippro.png)
 ## Bitcoin and Ligtning payments for Paid Memberships Pro in WordPress ##
 
-=== Coinsnap for Paid Memberships Pro 1.0.0 ===
+# Coinsnap for Paid Memberships Pro 1.0.0 #
 
 * Contributors: coinsnap
 * Tags: Lightning, Lightning Payment, SATS, Satoshi sats, bitcoin, Wordpress, Paid Memberships Pro, paywall, payment gateway, accept bitcoin, bitcoin plugin, bitcoin payment processor, bitcoin e-commerce, Lightning Network, cryptocurrency, lightning payment processor
-* Tested up to: 3.2.x
 * Requires PHP: 7.4
 * Tested up to: 6.6.1
 * Stable tag: 1.0.0
 * License: GPL2
 * License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Coinsnap is a Lightning payment provider and offers a payment gateway for processing Bitcoin and Lightning payments. A merchant only needs a Lightning wallet with a lightning address to accept Bitcoin and Lightning payments on their website.
+Bitcoin and Lightning payment processing with the Coinsnap add-on for PaidMembershipsPro Wordpress Plug-in.
 
-== Description ==
+* Paid Memberships Pro Demo Donation Page: https://paidmembershippro.coinsnap.org/
+* Blog Article: https://coinsnap.io/en/coinsnap-for-paid-memberships-pro-payment-plugin/
+* WordPress: https://wordpress.org/plugins/coinsnap-for-paidmembershipspro/
+* GitHub: https://github.com/Coinsnap/Coinsnap-for-PaidMembershipsPro
 
-If you sell restricted content and manage member subscriptions with recurring payments based on Paid Memberships Pro for Wordpress, then you can easily integrate payment processing via Bitcoin and Lightning with the Coinsnap plugin.
+# Description #
+
+Coinsnap is a Lightning payment provider and offers a payment gateway for processing Bitcoin and Lightning payments. Website owner only needs a Lightning wallet with a lightning address to accept Bitcoin and Lightning payments on their website.
+
+If you sell restricted content and manage membership subscriptions with recurring payments based on Paid Memberships Pro for WordPress, then you can easily integrate payment processing via Bitcoin and Lightning with the Coinsnap plugin.
 
 Just install the Coinsnap for Paid Memberships Pro plugin, connect it to your Coinsnap account and your customers will be able to pay you with Bitcoin and Lightning.
 
 Incoming Bitcoin payments are directly forwarded and credited to your Lightning Wallet.
 
-== Installation ==
+# Installation #
 
 ## Install Paid Memberships Pro plugin via Github ##
 
