@@ -1,7 +1,7 @@
 # Coinsnap for Paid Memberships Pro payment plugin #
 ![Image of Coinsnap for paid meberships pro](https://coinsnap.io/wp-content/uploads/2024/01/coinsnap-for-paidmembershippro.png)
 
-## Bitcoin and Ligtning payments for Paid Memberships Pro in WordPress ##
+## Bitcoin and Lightning payments for Paid Memberships Pro in WordPress ##
 
 * Contributors: coinsnap
 * Tags: Lightning, Lightning Payment, SATS, Satoshi sats, bitcoin, Wordpress, Paid Memberships Pro, paywall, payment gateway, accept bitcoin, bitcoin plugin, bitcoin payment processor, bitcoin e-commerce, Lightning Network, cryptocurrency, lightning payment processor
