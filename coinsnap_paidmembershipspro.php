@@ -8,9 +8,9 @@
  * Text Domain:     coinsnap-for-paidmembershipspro
  * Domain Path:     /languages
  * Requires PHP:    7.4
- * Tested up to:    6.6
+ * Tested up to:    6.6.2
  * Requires at least: 5.2
- * PMPro tested up to: 3.1.2
+ * PMPro tested up to: 3.1.3
  * License:         GPL2
  * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
  *
@@ -359,7 +359,7 @@ add_action('plugins_loaded', function (): void {
 				
 				
 				if(!empty($discount_code_id)){
-                                    $wpdb->prepare("INSERT INTO $wpdb->pmpro_discount_codes_uses (code_id, user_id, order_id, timestamp) VALUES(%s, %s, %s, now())",$discount_code_id,$user_id,$morder->id);	
+                                    $wpdb->insert($wpdb->pmpro_discount_codes_uses, ['code_id' => $discount_code_id, 'user_id' => $user_id, 'order_id' => $morder->id, 'timestamp' => now()], ['%s', '%s', '%s', '%s']);
                                 }
 							
 				$morder->Gateway->sendToCoinsnap($morder);
