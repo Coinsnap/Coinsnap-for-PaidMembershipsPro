@@ -8,7 +8,7 @@
  * Text Domain:     coinsnap-for-paidmembershipspro
  * Domain Path:     /languages
  * Requires PHP:    7.4
- * Tested up to:    6.6.2
+ * Tested up to:    6.7
  * Requires at least: 5.2
  * PMPro tested up to: 3.3.1
  * License:         GPL2
