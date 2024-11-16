@@ -3,7 +3,7 @@ Contributors: coinsnap
 Tags:  Coinsnap, PaidMembershipsPro, Bitcoin, Lightning, Membership 
 Requires at least: 6.2
 Requires PHP: 7.4
-Tested up to: 6.6.2
+Tested up to: 6.7
 Stable tag: 1.0.0
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
