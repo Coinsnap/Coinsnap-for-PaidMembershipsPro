@@ -1,6 +1,6 @@
 <?php
 /*
- * Plugin Name:     Coinsnap add-on for Paid Memberships Pro
+ * Plugin Name:     Coinsnap for Paid Memberships Pro
  * Description:     Provides a <a href="https://coinsnap.io">Coinsnap</a>  - Bitcoin + Lightning Payment Gateway for Paid Memberships Pro.
  * Version:         1.0.0
  * Author:          Coinsnap
@@ -109,13 +109,13 @@ add_action('plugins_loaded', function (): void {
 
                     if(!isset($coinsnap_store_id) || empty($coinsnap_store_id)){
                         echo '<div class="notice notice-error"><p>';
-                        esc_html_e('Coinsnap Store ID is not set', 'coinsnap-for-paidmembershipspro');
+                        esc_html_e('PMPro: Coinsnap Store ID is not set', 'coinsnap-for-paidmembershipspro');
                         echo '</p></div>';
                     }
 
                     if(!isset($coinsnap_api_key) || empty($coinsnap_api_key)){
                         echo '<div class="notice notice-error"><p>';
-                        esc_html_e('Coinsnap API Key is not set', 'coinsnap-for-paidmembershipspro');
+                        esc_html_e('PMPro: Coinsnap API Key is not set', 'coinsnap-for-paidmembershipspro');
                         echo '</p></div>';
                     }
 
@@ -124,30 +124,30 @@ add_action('plugins_loaded', function (): void {
                         $store = $client->getStore($coinsnap_store_id);
                         if ($store['code'] === 200) {
                             echo '<div class="notice notice-success"><p>';
-                            esc_html_e('Established connection to Coinsnap Server', 'coinsnap-for-paidmembershipspro');
+                            esc_html_e('PMPro: Established connection to Coinsnap Server', 'coinsnap-for-paidmembershipspro');
                             echo '</p></div>';
 
                             if ( ! self::webhookExists( $coinsnap_store_id, $coinsnap_api_key, $coinsnap_webhook_url ) ) {
                                 if ( ! self::registerWebhook( $coinsnap_store_id, $coinsnap_api_key, $coinsnap_webhook_url ) ) {
                                     echo '<div class="notice notice-error"><p>';
-                                    esc_html_e('Unable to create webhook on Coinsnap Server', 'coinsnap-for-paidmembershipspro');
+                                    esc_html_e('PMPro: Unable to create webhook on Coinsnap Server', 'coinsnap-for-paidmembershipspro');
                                     echo '</p></div>';
                                 }
                                 else {
                                     echo '<div class="notice notice-success"><p>';
-                                    esc_html_e('Successfully registered a new webhook on Coinsnap Server', 'coinsnap-for-paidmembershipspro');
+                                    esc_html_e('PMPro: Successfully registered webhook on Coinsnap Server', 'coinsnap-for-paidmembershipspro');
                                     echo '</p></div>';
                                 }
                             }
                             else {
                                 echo '<div class="notice notice-info"><p>';
-                                esc_html_e('Webhook already exists, skipping webhook creation', 'coinsnap-for-paidmembershipspro');
+                                esc_html_e('PMPro: Webhook already exists, skipping webhook creation', 'coinsnap-for-paidmembershipspro');
                                 echo '</p></div>';
                             }
                         }
                         else {
                             echo '<div class="notice notice-error"><p>';
-                            esc_html_e('Coinsnap connection error:', 'coinsnap-for-paidmembershipspro');
+                            esc_html_e('PMPro: Coinsnap connection error:', 'coinsnap-for-paidmembershipspro');
                             echo esc_html($store['result']['message']);
                             echo '</p></div>';
                         }
