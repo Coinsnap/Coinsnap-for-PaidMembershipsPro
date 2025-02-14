@@ -13,10 +13,10 @@
 
 Bitcoin and Lightning payment processing with the Coinsnap add-on for PaidMembershipsPro Wordpress Plug-in.
 
-* Paid Memberships Pro Demo Donation Page: https://paidmembershippro.coinsnap.org/
-* Blog Article: https://coinsnap.io/en/coinsnap-for-paid-memberships-pro-payment-plugin/
-* WordPress: https://wordpress.org/plugins/coinsnap-for-paidmembershipspro/
-* GitHub: https://github.com/Coinsnap/Coinsnap-for-PaidMembershipsPro
+* Paid Memberships Pro Demo Donation Page: [https://paidmembershippro.coinsnap.org/](https://paidmembershippro.coinsnap.org/)
+* Blog Article: [https://coinsnap.io/coinsnap-for-paid-memberships-pro-payment-plugin/](https://coinsnap.io/coinsnap-for-paid-memberships-pro-payment-plugin/)
+* WordPress: [https://wordpress.org/plugins/coinsnap-for-paidmembershipspro/](https://wordpress.org/plugins/coinsnap-for-paidmembershipspro/)
+* GitHub: [https://github.com/Coinsnap/Coinsnap-for-PaidMembershipsPro](https://github.com/Coinsnap/Coinsnap-for-PaidMembershipsPro)
 
 * Description *
 
