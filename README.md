@@ -1,4 +1,4 @@
-# Coinsnap for Paid Memberships Pro payment plugin #
+# Bitcoin payment for Paid Membership Pro #
 ![Coinsnap for Paid meberships pro](https://resources.coinsnap.org/products/paidmembershipspro/images/1.png)
 
 ## Bitcoin and Lightning payments for Paid Memberships Pro in WordPress ##
@@ -11,7 +11,7 @@
 * License: GPL2
 * License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Bitcoin and Lightning payment processing with the Coinsnap add-on for PaidMembershipsPro Wordpress Plug-in.
+With this Bitcoin payment plugin for Paid Membership Pro you can now charge for your memberships in Bitcoin!
 
 * Paid Memberships Pro Demo Donation Page: [https://paidmembershippro.coinsnap.org/](https://paidmembershippro.coinsnap.org/)
 * Blog Article: [https://coinsnap.io/coinsnap-for-paid-memberships-pro-payment-plugin/](https://coinsnap.io/coinsnap-for-paid-memberships-pro-payment-plugin/)
