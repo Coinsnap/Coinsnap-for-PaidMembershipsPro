@@ -10,7 +10,7 @@
  * Requires PHP:    7.4
  * Tested up to:    6.7
  * Requires at least: 5.2
- * PMPro tested up to: 3.3.3
+ * PMPro tested up to: 3.4.1
  * License:         GPL2
  * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
  *
