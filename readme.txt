@@ -1,4 +1,4 @@
-=== Bitcoin payment for Paid Membership Pro ===
+=== Bitcoin payment for Paid Memberships Pro ===
 Contributors: coinsnap
 Tags:  Coinsnap, Paid Memberships Pro, Bitcoin, Lightning, Membership 
 Tested up to: 6.7
@@ -6,7 +6,7 @@ Stable tag: 1.0.0
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-With this Bitcoin payment plugin for Paid Membership Pro you can now charge for your memberships in Bitcoin!
+With this Bitcoin payment plugin for Paid Memberships Pro you can now charge for your memberships in Bitcoin!
 
 == Description ==
 

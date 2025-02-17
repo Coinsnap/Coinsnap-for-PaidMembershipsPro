@@ -1,11 +1,11 @@
 <?php
 /*
- * Plugin Name:     Bitcoin payment for Paid Membership Pro
- * Description:     With this Bitcoin payment plugin for Paid Membership Pro you can now charge for your memberships in Bitcoin!
+ * Plugin Name:     Bitcoin payment for Paid Memberships Pro
+ * Description:     With this Bitcoin payment plugin for Paid Memberships Pro you can now charge for your memberships in Bitcoin!
  * Version:         1.0.0
  * Author:          Coinsnap
  * Author URI:      https://coinsnap.io/
- * Text Domain:     coinsnap-for-paid-membership-pro
+ * Text Domain:     coinsnap-for-paid-memberships-pro
  * Domain Path:     /languages
  * Requires PHP:    7.4
  * Tested up to:    6.7
@@ -21,7 +21,7 @@ if (!defined( 'ABSPATH' )){ exit;}
 define( 'SERVER_PHP_VERSION', '7.4' );
 define( 'COINSNAP_VERSION', '1.0.0' );
 define( 'COINSNAP_REFERRAL_CODE', 'D12876' );
-define( 'COINSNAP_PLUGIN_ID', 'coinsnap-for-paid-membership-pro' );
+define( 'COINSNAP_PLUGIN_ID', 'coinsnap-for-paid-memberships-pro' );
 define( 'COINSNAP_PLUGIN_FILE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'COINSNAP_PLUGIN_URL', plugin_dir_url(__FILE__ ) );
 define( 'COINSNAP_SERVER_URL', 'https://app.coinsnap.io' );
@@ -42,14 +42,14 @@ add_action('admin_init', 'check_pmpro_dependency');
 
 function pmpro_dependency_notice(){?>
     <div class="notice notice-error">
-        <p><?php echo esc_html_e('Coinsnap for Paid Memberships Pro plugin requires Paid Memberships Pro to be installed and activated.','coinsnap-for-paid-membership-pro'); ?></p>
+        <p><?php echo esc_html_e('Coinsnap for Paid Memberships Pro plugin requires Paid Memberships Pro to be installed and activated.','coinsnap-for-paid-memberships-pro'); ?></p>
     </div>
     <?php
 }
 
 function pmpro_gateway_notice(){?>
     <div class="notice notice-error">
-        <p><?php echo esc_html_e("Paid Memberships Pro plugin gateway isn't loaded",'coinsnap-for-paid-membership-pro'); ?></p>
+        <p><?php echo esc_html_e("Paid Memberships Pro plugin gateway isn't loaded",'coinsnap-for-paid-memberships-pro'); ?></p>
     </div>
     <?php
 }
@@ -109,13 +109,13 @@ add_action('plugins_loaded', function (): void {
 
                     if(!isset($coinsnap_store_id) || empty($coinsnap_store_id)){
                         echo '<div class="notice notice-error"><p>';
-                        esc_html_e('PMPro: Coinsnap Store ID is not set', 'coinsnap-for-paid-membership-pro');
+                        esc_html_e('PMPro: Coinsnap Store ID is not set', 'coinsnap-for-paid-memberships-pro');
                         echo '</p></div>';
                     }
 
                     if(!isset($coinsnap_api_key) || empty($coinsnap_api_key)){
                         echo '<div class="notice notice-error"><p>';
-                        esc_html_e('PMPro: Coinsnap API Key is not set', 'coinsnap-for-paid-membership-pro');
+                        esc_html_e('PMPro: Coinsnap API Key is not set', 'coinsnap-for-paid-memberships-pro');
                         echo '</p></div>';
                     }
 
@@ -124,30 +124,30 @@ add_action('plugins_loaded', function (): void {
                         $store = $client->getStore($coinsnap_store_id);
                         if ($store['code'] === 200) {
                             echo '<div class="notice notice-success"><p>';
-                            esc_html_e('PMPro: Established connection to Coinsnap Server', 'coinsnap-for-paid-membership-pro');
+                            esc_html_e('PMPro: Established connection to Coinsnap Server', 'coinsnap-for-paid-memberships-pro');
                             echo '</p></div>';
 
                             if ( ! self::webhookExists( $coinsnap_store_id, $coinsnap_api_key, $coinsnap_webhook_url ) ) {
                                 if ( ! self::registerWebhook( $coinsnap_store_id, $coinsnap_api_key, $coinsnap_webhook_url ) ) {
                                     echo '<div class="notice notice-error"><p>';
-                                    esc_html_e('PMPro: Unable to create webhook on Coinsnap Server', 'coinsnap-for-paid-membership-pro');
+                                    esc_html_e('PMPro: Unable to create webhook on Coinsnap Server', 'coinsnap-for-paid-memberships-pro');
                                     echo '</p></div>';
                                 }
                                 else {
                                     echo '<div class="notice notice-success"><p>';
-                                    esc_html_e('PMPro: Successfully registered webhook on Coinsnap Server', 'coinsnap-for-paid-membership-pro');
+                                    esc_html_e('PMPro: Successfully registered webhook on Coinsnap Server', 'coinsnap-for-paid-memberships-pro');
                                     echo '</p></div>';
                                 }
                             }
                             else {
                                 echo '<div class="notice notice-info"><p>';
-                                esc_html_e('PMPro: Webhook already exists, skipping webhook creation', 'coinsnap-for-paid-membership-pro');
+                                esc_html_e('PMPro: Webhook already exists, skipping webhook creation', 'coinsnap-for-paid-memberships-pro');
                                 echo '</p></div>';
                             }
                         }
                         else {
                             echo '<div class="notice notice-error"><p>';
-                            esc_html_e('PMPro: Coinsnap connection error:', 'coinsnap-for-paid-membership-pro');
+                            esc_html_e('PMPro: Coinsnap connection error:', 'coinsnap-for-paid-memberships-pro');
                             echo esc_html($store['result']['message']);
                             echo '</p></div>';
                         }
@@ -161,7 +161,7 @@ add_action('plugins_loaded', function (): void {
             //show our submit buttons?>
             <span id="pmpro_submit_span">
                 <input type="hidden" name="submit-checkout" value="1" />
-                <input type="submit" class="<?php echo esc_html(pmpro_get_element_class( 'pmpro_btn pmpro_btn-submit-checkout', 'pmpro_btn-submit-checkout' )); ?>" value="<?php if($pmpro_requirebilling) {  esc_html_e('Coinsnap (Bitcoin + Lightning)', 'coinsnap-for-paid-membership-pro' ); } else { esc_html_e('Submit and Confirm', 'coinsnap-for-paid-membership-pro' );}?>" />
+                <input type="submit" class="<?php echo esc_html(pmpro_get_element_class( 'pmpro_btn pmpro_btn-submit-checkout', 'pmpro_btn-submit-checkout' )); ?>" value="<?php if($pmpro_requirebilling) {  esc_html_e('Coinsnap (Bitcoin + Lightning)', 'coinsnap-for-paid-memberships-pro' ); } else { esc_html_e('Submit and Confirm', 'coinsnap-for-paid-memberships-pro' );}?>" />
             </span>
 	<?php
             return false;
@@ -267,7 +267,7 @@ add_action('plugins_loaded', function (): void {
 				}
 			
 				if ($file == $this_plugin) {
-					$settings_link = '<a href="'.admin_url('admin.php?page=pmpro-paymentsettings').'">'.__( 'Settings', 'coinsnap-for-paid-membership-pro' ).'</a>';
+					$settings_link = '<a href="'.admin_url('admin.php?page=pmpro-paymentsettings').'">'.__( 'Settings', 'coinsnap-for-paid-memberships-pro' ).'</a>';
 					array_unshift($links, $settings_link);
 				}
 			
@@ -276,7 +276,7 @@ add_action('plugins_loaded', function (): void {
 			
 	public static function pmpro_gateways($gateways){
 				if(empty($gateways['coinsnap'])){
-				$gateways = array_slice($gateways, 0, 1) + array("coinsnap" => __('Coinsnap', 'coinsnap-for-paid-membership-pro')) + array_slice($gateways, 1);
+				$gateways = array_slice($gateways, 0, 1) + array("coinsnap" => __('Coinsnap', 'coinsnap-for-paid-memberships-pro')) + array_slice($gateways, 1);
                                 }
 				return $gateways;
 	}
@@ -323,12 +323,12 @@ add_action('plugins_loaded', function (): void {
 				<tr class="pmpro_settings_divider gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
 				<td colspan="2">
 					<hr />
-					<h2 class="title"><?php esc_html_e('Coinsnap Settings', 'coinsnap-for-paid-membership-pro' ); ?></h2>
+					<h2 class="title"><?php esc_html_e('Coinsnap Settings', 'coinsnap-for-paid-memberships-pro' ); ?></h2>
 				</td>
 				</tr>
 				<tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
 				<th scope="row" valign="top">
-					<label for="coinsnap_store_id"><?php esc_html_e('Store ID', 'coinsnap-for-paid-membership-pro' );?>:</label>
+					<label for="coinsnap_store_id"><?php esc_html_e('Store ID', 'coinsnap-for-paid-memberships-pro' );?>:</label>
 				</th>
 				<td>
 					<input type="text" id="coinsnap_store_id" name="coinsnap_store_id" value="<?php echo esc_attr($values['coinsnap_store_id'])?>" class="regular-text code" />
@@ -336,7 +336,7 @@ add_action('plugins_loaded', function (): void {
 				</tr>
 				<tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
 				<th scope="row" valign="top">
-					<label for="coinsnap_api_key"><?php esc_html_e('API Key', 'coinsnap-for-paid-membership-pro' );?>:</label>
+					<label for="coinsnap_api_key"><?php esc_html_e('API Key', 'coinsnap-for-paid-memberships-pro' );?>:</label>
 				</th>
 				<td>
 					<input type="text" id="coinsnap_api_key" name="coinsnap_api_key" value="<?php echo esc_attr($values['coinsnap_api_key'])?>" class="regular-text code" />
@@ -344,7 +344,7 @@ add_action('plugins_loaded', function (): void {
 				</tr>
 
 				<tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
-				<th scope="row" valign="top"><label for="coinsnap_expired_status"><?php esc_html_e( 'Expired Status', 'coinsnap-for-paid-membership-pro' ); ?>:</label></th>
+				<th scope="row" valign="top"><label for="coinsnap_expired_status"><?php esc_html_e( 'Expired Status', 'coinsnap-for-paid-memberships-pro' ); ?>:</label></th>
 				<td>
 					
 						<select id="coinsnap_expired_status" name="coinsnap_expired_status">
@@ -357,7 +357,7 @@ add_action('plugins_loaded', function (): void {
 				</tr>
 
 				<tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
-				<th scope="row" valign="top"><label for="coinsnap_settled_status"><?php esc_html_e( 'Settled Status', 'coinsnap-for-paid-membership-pro' ); ?>:</label></th>
+				<th scope="row" valign="top"><label for="coinsnap_settled_status"><?php esc_html_e( 'Settled Status', 'coinsnap-for-paid-memberships-pro' ); ?>:</label></th>
 				<td>
 					
 						<select id="coinsnap_settled_status" name="coinsnap_settled_status">
@@ -370,7 +370,7 @@ add_action('plugins_loaded', function (): void {
 				</tr>
 
 				<tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
-				<th scope="row" valign="top"><label for="coinsnap_processing_status"><?php esc_html_e( 'Processing Status', 'coinsnap-for-paid-membership-pro' ); ?>:</label></th>
+				<th scope="row" valign="top"><label for="coinsnap_processing_status"><?php esc_html_e( 'Processing Status', 'coinsnap-for-paid-memberships-pro' ); ?>:</label></th>
 				<td>
 					
 						<select id="coinsnap_processing_status" name="coinsnap_processing_status">
