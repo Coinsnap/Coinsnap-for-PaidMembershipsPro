@@ -10,6 +10,7 @@
  * Requires PHP:    7.4
  * Tested up to:    6.7
  * Requires at least: 5.2
+ * Requires Plugins: paid-memberships-pro
  * PMPro tested up to: 3.4.2
  * License:         GPL2
  * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
@@ -167,7 +168,7 @@ add_action('plugins_loaded', function (): void {
             return false;
 	}
 
-	public static function process_webhook() {
+	public static function process_webhook(){
 			
             if ( null === ( filter_input(INPUT_GET,'pmp-listener') ) || filter_input(INPUT_GET,'pmp-listener') !== 'coinsnap' ) {
                 return;
@@ -212,47 +213,50 @@ add_action('plugins_loaded', function (): void {
                 
 				
 		if ($order_status == 'success'){
-
 						
-						// Get discount code.
-						$morder->getDiscountCode();
-						if ( ! empty( $morder->discount_code ) ) {
-						// Update membership level
-							$morder->getMembershipLevel(true);
-							$discount_code_id = $morder->discount_code->id;
-						} else {
-							$discount_code_id = "";
-						}
+                    // Get discount code.
+                    $morder->getDiscountCode();
+                    if ( ! empty( $morder->discount_code ) ) {
+		
+                        // Update membership level
+                        $morder->getMembershipLevel(true);
+			$discount_code_id = $morder->discount_code->id;
+                    }
+                    else {
+			$discount_code_id = "";
+                    }
 						
-						$morder->membership_level = apply_filters("pmpro_inshandler_level", $morder->membership_level, $morder->user_id);		
-						$startdate = apply_filters("pmpro_checkout_start_date", "'" . current_time('mysql') . "'", $morder->user_id, $morder->membership_level);
-						//fix expiration date
-						if(!empty($morder->membership_level->expiration_number))
-						{
-							$enddate = "'" . date_i18n("Y-m-d", strtotime("+ " . $morder->membership_level->expiration_number . " " . $morder->membership_level->expiration_period, current_time("timestamp"))) . "'";
-						}
-						else
-						{
-							$enddate = "NULL";
-						}
-						//filter the enddate (documented in preheaders/checkout.php)
-						$enddate = apply_filters("pmpro_checkout_end_date", $enddate, $morder->user_id, $morder->membership_level, $startdate);
+                    $morder->membership_level = apply_filters("pmpro_inshandler_level", $morder->membership_level, $morder->user_id);		
+                    $startdate = apply_filters("pmpro_checkout_start_date", "'" . current_time('mysql') . "'", $morder->user_id, $morder->membership_level);
+		
+                    //fix expiration date
+                    if(!empty($morder->membership_level->expiration_number)){
+                        $enddate = "'" . date_i18n("Y-m-d", strtotime("+ " . $morder->membership_level->expiration_number . " " . $morder->membership_level->expiration_period, current_time("timestamp"))) . "'";
+                    }
+                    else {
+                        $enddate = "NULL";
+                    }
+						
+                    //filter the enddate (documented in preheaders/checkout.php)
+                    $enddate = apply_filters("pmpro_checkout_end_date", $enddate, $morder->user_id, $morder->membership_level, $startdate);
 
-						$custom_level = array(
-							'user_id' => $morder->user_id,
-							'membership_id' => $morder->membership_level->id,
-							'code_id' => $discount_code_id,
-							'initial_payment' => $morder->membership_level->initial_payment,
-							'billing_amount' => $morder->membership_level->billing_amount,
-							'cycle_number' => $morder->membership_level->cycle_number,
-							'cycle_period' => $morder->membership_level->cycle_period,
-							'billing_limit' => $morder->membership_level->billing_limit,
-							'trial_amount' => $morder->membership_level->trial_amount,
-							'trial_limit' => $morder->membership_level->trial_limit,
-							'startdate' => $startdate,
-							'enddate' => $enddate);
-					}
-					pmpro_changeMembershipLevel($custom_level, $morder->user_id);
+                    $custom_level = array(
+			'user_id' => $morder->user_id,
+			'membership_id' => $morder->membership_level->id,
+			'code_id' => $discount_code_id,
+			'initial_payment' => $morder->membership_level->initial_payment,
+			'billing_amount' => $morder->membership_level->billing_amount,
+			'cycle_number' => $morder->membership_level->cycle_number,
+			'cycle_period' => $morder->membership_level->cycle_period,
+			'billing_limit' => $morder->membership_level->billing_limit,
+			'trial_amount' => $morder->membership_level->trial_amount,
+			'trial_limit' => $morder->membership_level->trial_limit,
+			'startdate' => $startdate,
+			'enddate' => $enddate);
+                    
+                    pmpro_changeMembershipLevel($custom_level, $morder->user_id);
+		}
+					
             }
             echo "OK";
             exit;
@@ -438,13 +442,14 @@ add_action('plugins_loaded', function (): void {
                     global $pmpro_currency;	
                     
 
-                            $amount =  $order->InitialPayment;
+                            $amount =  $order->subtotal;
+                            
                             $redirectUrl = esc_url(site_url().'/membership-confirmation/?level=').$order->membership_id;
             
                             $amount = round($amount, 2);
-                            $buyerEmail = $order->Email;
 
                             $current_user = wp_get_current_user();
+                            $buyerEmail = $current_user->user_email; //$order->Email;
                             $buyerName =  $current_user->user_firstname . ' ' . $current_user->user_lastname;
 						    	
 
