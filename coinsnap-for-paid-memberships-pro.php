@@ -11,7 +11,7 @@
  * Tested up to:    6.7
  * Requires at least: 5.2
  * Requires Plugins: paid-memberships-pro
- * PMPro tested up to: 3.4.2
+ * PMPro tested up to: 3.4.4
  * License:         GPL2
  * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
  *
@@ -209,10 +209,8 @@ add_action('plugins_loaded', function (): void {
 		$morder->getMembershipLevel();					
 		$morder->status = $order_status;	
 		$morder->saveOrder();
-                
-                
 				
-		if ($order_status == 'success'){
+		if ($order_status === 'success'){
 						
                     // Get discount code.
                     $morder->getDiscountCode();
@@ -239,22 +237,25 @@ add_action('plugins_loaded', function (): void {
 						
                     //filter the enddate (documented in preheaders/checkout.php)
                     $enddate = apply_filters("pmpro_checkout_end_date", $enddate, $morder->user_id, $morder->membership_level, $startdate);
-
-                    $custom_level = array(
-			'user_id' => $morder->user_id,
-			'membership_id' => $morder->membership_level->id,
-			'code_id' => $discount_code_id,
-			'initial_payment' => $morder->membership_level->initial_payment,
-			'billing_amount' => $morder->membership_level->billing_amount,
-			'cycle_number' => $morder->membership_level->cycle_number,
-			'cycle_period' => $morder->membership_level->cycle_period,
-			'billing_limit' => $morder->membership_level->billing_limit,
-			'trial_amount' => $morder->membership_level->trial_amount,
-			'trial_limit' => $morder->membership_level->trial_limit,
-			'startdate' => $startdate,
-			'enddate' => $enddate);
                     
-                    pmpro_changeMembershipLevel($custom_level, $morder->user_id);
+                    if($morder->user_id !== null){
+
+                        $custom_level = array(
+                            'user_id' => $morder->user_id,
+                            'membership_id' => $morder->membership_level->id,
+                            'code_id' => $discount_code_id,
+                            'initial_payment' => $morder->membership_level->initial_payment,
+                            'billing_amount' => $morder->membership_level->billing_amount,
+                            'cycle_number' => $morder->membership_level->cycle_number,
+                            'cycle_period' => $morder->membership_level->cycle_period,
+                            'billing_limit' => $morder->membership_level->billing_limit,
+                            'trial_amount' => $morder->membership_level->trial_amount,
+                            'trial_limit' => $morder->membership_level->trial_limit,
+                            'startdate' => $startdate,
+                            'enddate' => $enddate);
+
+                        pmpro_changeMembershipLevel($custom_level, $morder->user_id);
+                    }
 		}
 					
             }
