@@ -19,15 +19,13 @@
  */ 
 
 if (!defined( 'ABSPATH' )){ exit;}
-define( 'SERVER_PHP_VERSION', '7.4' );
-define( 'COINSNAP_VERSION', '1.0.0' );
-define( 'COINSNAP_REFERRAL_CODE', 'D12876' );
-define( 'COINSNAP_PLUGIN_ID', 'coinsnap-for-paid-memberships-pro' );
-define( 'COINSNAP_PLUGIN_FILE_PATH', plugin_dir_path( __FILE__ ) );
-define( 'COINSNAP_PLUGIN_URL', plugin_dir_url(__FILE__ ) );
-define( 'COINSNAP_SERVER_URL', 'https://app.coinsnap.io' );
-define( 'COINSNAP_API_PATH', '/api/v1/');
-define( 'COINSNAP_SERVER_PATH', 'stores' );
+if(!defined('COINSNAPPMPRO_PLUGIN_PHP_VERSION')){define( 'COINSNAPPMPRO_PLUGIN_PHP_VERSION', '7.4' );}
+if(!defined('COINSNAPPMPRO_PLUGIN_VERSION')){define( 'COINSNAPPMPRO_PLUGIN_VERSION', '1.0.0' );}
+if(!defined('COINSNAPPMPRO_REFERRAL_CODE')){define( 'COINSNAPPMPRO_REFERRAL_CODE', 'D12876' );}
+if(!defined('COINSNAP_SERVER_URL')){define( 'COINSNAP_SERVER_URL', 'https://app.coinsnap.io' );}
+if(!defined('COINSNAP_API_PATH')){define( 'COINSNAP_API_PATH', '/api/v1/');}
+if(!defined('COINSNAP_SERVER_PATH')){define( 'COINSNAP_SERVER_PATH', 'stores' );}
+if(!defined('COINSNAP_CURRENCIES')){define( 'COINSNAP_CURRENCIES', array("EUR","USD","SATS","BTC","CAD","JPY","GBP","CHF","RUB") );}
 
 if (!function_exists('is_plugin_active')) {
     include_once(ABSPATH . 'wp-admin/includes/plugin.php');
@@ -66,7 +64,6 @@ add_action('plugins_loaded', function (): void {
     require_once(dirname(__FILE__) . "/library/loader.php");
 
     add_action('init', array('PMProGateway_coinsnap', 'init'));	
-    	
     add_filter('plugin_action_links', array('PMProGateway_coinsnap', 'plugin_action_links'), 10, 2 );
 
     class PMProGateway_coinsnap extends PMProGateway {
@@ -287,23 +284,24 @@ add_action('plugins_loaded', function (): void {
 	}
 		
 	public static function getGatewayOptions(){
-				$options = array(
-						'coinsnap_store_id',
-						'coinsnap_api_key',
-						'coinsnap_expired_status',
-						'coinsnap_settled_status',
-						'coinsnap_processing_status',
-						'currency'
-				);
+            $options = array(
+                'coinsnap_store_id',
+                'coinsnap_api_key',
+                'coinsnap_autoredirect',
+                'coinsnap_expired_status',
+                'coinsnap_settled_status',
+                'coinsnap_processing_status',
+                'currency'
+            );
 		
-				return $options;
+            return $options;
 	}
 		
 	public static function pmpro_payment_options($options){
 				
-				$coinsnap_options = self::getGatewayOptions();					
-				$options = array_merge($coinsnap_options, $options);		
-				return $options;
+            $coinsnap_options = self::getGatewayOptions();					
+            $options = array_merge($coinsnap_options, $options);		
+            return $options;
                                 
                                 $webhook_url = self::get_webhook_url();
                     
@@ -315,55 +313,39 @@ add_action('plugins_loaded', function (): void {
                     }
 	}
 							
-	static function pmpro_payment_option_fields($values, $gateway){
-            
+        static function pmpro_payment_option_fields($values, $gateway){
+
             $statuses = pmpro_getOrderStatuses();
-				
-				$coinsnap_expired_status = !empty($values['coinsnap_expired_status']) ? $values['coinsnap_expired_status'] : 'cancelled';
-				$coinsnap_settled_status = !empty($values['coinsnap_settled_status']) ? $values['coinsnap_settled_status'] : 'success';				
-				$coinsnap_processing_status = !empty($values['coinsnap_processing_status']) ? $values['coinsnap_processing_status'] : 'success';					
-				
 
-			?>
-				<tr class="pmpro_settings_divider gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
-				<td colspan="2">
-					<hr />
-					<h2 class="title"><?php esc_html_e('Coinsnap Settings', 'coinsnap-for-paid-memberships-pro' ); ?></h2>
-				</td>
-				</tr>
-				<tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
-				<th scope="row" valign="top">
-					<label for="coinsnap_store_id"><?php esc_html_e('Store ID', 'coinsnap-for-paid-memberships-pro' );?>:</label>
-				</th>
-				<td>
-					<input type="text" id="coinsnap_store_id" name="coinsnap_store_id" value="<?php echo esc_attr($values['coinsnap_store_id'])?>" class="regular-text code" />
-				</td>
-				</tr>
-				<tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
-				<th scope="row" valign="top">
-					<label for="coinsnap_api_key"><?php esc_html_e('API Key', 'coinsnap-for-paid-memberships-pro' );?>:</label>
-				</th>
-				<td>
-					<input type="text" id="coinsnap_api_key" name="coinsnap_api_key" value="<?php echo esc_attr($values['coinsnap_api_key'])?>" class="regular-text code" />
-				</td>
-				</tr>
+            $coinsnap_expired_status = !empty($values['coinsnap_expired_status']) ? $values['coinsnap_expired_status'] : 'cancelled';
+            $coinsnap_settled_status = !empty($values['coinsnap_settled_status']) ? $values['coinsnap_settled_status'] : 'success';				
+            $coinsnap_processing_status = !empty($values['coinsnap_processing_status']) ? $values['coinsnap_processing_status'] : 'success';?>
 
-				<tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
-				<th scope="row" valign="top"><label for="coinsnap_expired_status"><?php esc_html_e( 'Expired Status', 'coinsnap-for-paid-memberships-pro' ); ?>:</label></th>
-				<td>
-					
-						<select id="coinsnap_expired_status" name="coinsnap_expired_status">
-							<?php foreach ( $statuses as $status ) { ?>
-								<option
-									value="<?php echo esc_attr( $status ); ?>" <?php selected( $coinsnap_expired_status, $status ); ?>><?php echo esc_html( $status ); ?></option>
-							<?php } ?>
-						</select>						
-				</td>
-				</tr>
+            <tr class="pmpro_settings_divider gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
+                <td colspan="2"><hr /><h2 class="title"><?php esc_html_e('Coinsnap Settings', 'coinsnap-for-paid-memberships-pro' ); ?></h2></td></tr>
 
-				<tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
-				<th scope="row" valign="top"><label for="coinsnap_settled_status"><?php esc_html_e( 'Settled Status', 'coinsnap-for-paid-memberships-pro' ); ?>:</label></th>
-				<td>
+            <tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
+                <th scope="row" valign="top">
+                    <label for="coinsnap_store_id"><?php esc_html_e('Store ID', 'coinsnap-for-paid-memberships-pro' );?>:</label>
+                </th>
+                <td><input type="text" id="coinsnap_store_id" name="coinsnap_store_id" value="<?php echo esc_attr($values['coinsnap_store_id'])?>" class="regular-text code" /></td>
+            </tr>
+            <tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
+                <th scope="row" valign="top"><label for="coinsnap_api_key"><?php esc_html_e('API Key', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
+                <td><input type="text" id="coinsnap_api_key" name="coinsnap_api_key" value="<?php echo esc_attr($values['coinsnap_api_key'])?>" class="regular-text code" /></td></tr>
+            <tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php }?>>
+                <th scope="row" valign="top"><label for="coinsnap_autoredirect"><?php esc_html_e('Redirect after payment', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
+                <td><input type="checkbox"<?php echo ($values['coinsnap_autoredirect']<1)? '' : ' checked="checked"';?> id="coinsnap_autoredirect" name="coinsnap_autoredirect" value="1" class="regular-text code" /></td></tr>
+            <tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
+                <th scope="row" valign="top"><label for="coinsnap_expired_status"><?php esc_html_e( 'Expired Status', 'coinsnap-for-paid-memberships-pro' ); ?>:</label></th>
+                <td><select id="coinsnap_expired_status" name="coinsnap_expired_status">
+                    <?php foreach ( $statuses as $status ) { ?>
+                        <option value="<?php echo esc_attr( $status ); ?>" <?php selected( $coinsnap_expired_status, $status ); ?>><?php echo esc_html( $status ); ?></option>
+                    <?php } ?>
+                    </select></td></tr>
+            <tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
+                <th scope="row" valign="top"><label for="coinsnap_settled_status"><?php esc_html_e( 'Settled Status', 'coinsnap-for-paid-memberships-pro' ); ?>:</label></th>
+                <td>
 					
 						<select id="coinsnap_settled_status" name="coinsnap_settled_status">
 							<?php foreach ( $statuses as $status ) { ?>
@@ -394,13 +376,12 @@ add_action('plugins_loaded', function (): void {
 			}
 		
 			
-			public static function pmpro_required_billing_fields($fields)
-			{
+        public static function pmpro_required_billing_fields($fields){
 				
-				unset($fields['bfirstname']);
-				unset($fields['blastname']);
-				unset($fields['baddress1']);
-				unset($fields['bcity']);
+            unset($fields['bfirstname']);
+            unset($fields['blastname']);
+            unset($fields['baddress1']);
+            unset($fields['bcity']);
 				unset($fields['bstate']);
 				unset($fields['bzipcode']);
 				unset($fields['bphone']);
@@ -413,78 +394,106 @@ add_action('plugins_loaded', function (): void {
 				unset($fields['CVV']);
 					
 				return $fields;
-			}
+        }
 		
 		
-			function process(&$order)
-			{
-				return true;
-			}
-			
-			static function pmpro_checkout_before_change_membership_level($user_id, $morder){
-				global $wpdb, $discount_code_id;
-                                
-				if(empty($morder)){
-                                    return;
-                                }
-				
-				$morder->user_id = $user_id;				
-				$morder->saveOrder();
-				
-				
-				if(!empty($discount_code_id)){
-                                    $wpdb->insert($wpdb->pmpro_discount_codes_uses, ['code_id' => $discount_code_id, 'user_id' => $user_id, 'order_id' => $morder->id, 'timestamp' => now()], ['%s', '%s', '%s', '%s']);
-                                }
-							
-				$morder->Gateway->sendToCoinsnap($morder);
-			}
-
-		public function sendToCoinsnap($order){
-                    global $pmpro_currency;	
-                    
-
-                            $amount =  $order->subtotal;
-                            
-                            $redirectUrl = esc_url(site_url().'/membership-confirmation/?level=').$order->membership_id;
+        function process(&$order){
             
-                            $amount = round($amount, 2);
+            global $pmpro_currency;	
+            $amount = round($order->subtotal, 2);
+            
+            $client =new \Coinsnap\Client\Invoice(self::getApiUrl(), self::getApiKey());
+            $checkInvoice = $client->checkPaymentData($amount,strtoupper($pmpro_currency));
+                
+            if($checkInvoice['result'] === true){
+                return true;
+            }
+            else {
+                if($checkInvoice['error'] === 'currencyError'){
+                            $errorMessage = sprintf( 
+                            /* translators: 1: Currency */
+                            __( 'Currency %1$s is not supported by Coinsnap', 'paid-memberships-pro' ), strtoupper( $pmpro_currency ));
+                }      
+                elseif($checkInvoice['error'] === 'amountError'){
+                            $errorMessage = sprintf( 
+                            /* translators: 1: Amount, 2: Currency */
+                            __( 'Invoice amount cannot be less than %1$s %2$s', 'paid-memberships-pro' ), $checkInvoice['min_value'], strtoupper( $pmpro_currency ));
+                }
+                
+                $order->error = $errorMessage;
+                return false;
+            }
+            
+            
+            
+	}
+			
+	static function pmpro_checkout_before_change_membership_level($user_id, $morder){
+            global $wpdb, $discount_code_id;
+                                
+            if(empty($morder)){return;}
+            $morder->user_id = $user_id;				
+            $morder->saveOrder();
+				
+				
+            if(!empty($discount_code_id)){
+                $wpdb->insert($wpdb->pmpro_discount_codes_uses, ['code_id' => $discount_code_id, 'user_id' => $user_id, 'order_id' => $morder->id, 'timestamp' => now()], ['%s', '%s', '%s', '%s']);
+            }
+							
+            $morder->Gateway->sendToCoinsnap($morder);
+	}
 
-                            $current_user = wp_get_current_user();
-                            $buyerEmail = $current_user->user_email; //$order->Email;
-                            $buyerName =  $current_user->user_firstname . ' ' . $current_user->user_lastname;
+        public function sendToCoinsnap($order){
+            global $pmpro_currency;	
+            $amount = round($order->subtotal, 2);
+            
+            $client =new \Coinsnap\Client\Invoice(self::getApiUrl(), self::getApiKey());
+            $checkInvoice = $client->checkPaymentData($amount,strtoupper($pmpro_currency));
+                
+            if($checkInvoice['result'] === true){
+            
+                $redirectUrl = esc_url(site_url().'/membership-confirmation/?level=').$order->membership_id;
+            
+                $current_user = wp_get_current_user();
+                $buyerEmail = $current_user->user_email;
+                $buyerName =  $current_user->user_firstname . ' ' . $current_user->user_lastname;
 						    	
+                $metadata = [];
+                $metadata['orderNumber'] = $order->id;
+                $metadata['customerName'] = $buyerName;
+                            
+                $redirectAutomatically = (pmpro_getOption( 'coinsnap_autoredirect') > 0 )? true : false;
+                $walletMessage = '';
 
-                            $metadata = [];
-                            $metadata['orderNumber'] = $order->id;
-                            $metadata['customerName'] = $buyerName;
-
-		    	$checkoutOptions = new \Coinsnap\Client\InvoiceCheckoutOptions();
-		    	$checkoutOptions->setRedirectURL( $redirectUrl );
-		    	$client =new \Coinsnap\Client\Invoice(self::getApiUrl(), self::getApiKey());
-		    	$camount = \Coinsnap\Util\PreciseNumber::parseFloat($amount,2);
-		    	$invoice = $client->createInvoice(
-                            self::getStoreId(),  
-			    	$pmpro_currency,
-			    	$camount,
-			    	$order->id,
-			    	$buyerEmail,
-			    	$buyerName, 
-			    	$redirectUrl,
-			    	COINSNAP_REFERRAL_CODE,     
-			    	$metadata,
-			    	$checkoutOptions
-		    	);
+		$camount = \Coinsnap\Util\PreciseNumber::parseFloat($amount,2);
+		$invoice = $client->createInvoice(
+                    self::getStoreId(),  
+                    $pmpro_currency,
+                    $camount,
+                    $order->id,
+                    $buyerEmail,
+                    $buyerName, 
+                    $redirectUrl,
+                    COINSNAPPMPRO_REFERRAL_CODE,     
+                    $metadata,
+                    $redirectAutomatically,
+                    $walletMessage
+		);
 		
-    			$payurl = $invoice->getData()['checkoutLink'] ;	
-				wp_redirect($payurl);
-				exit;
-
-		}
+    		if($payurl = $invoice->getData()['checkoutLink']){
+                    wp_redirect($payurl);
+                }
+            }
+            else {
+                
+            }
+            exit;
+        }
 		
-		public  static function get_webhook_url() {
+	public static function get_webhook_url() {
 			return esc_url_raw( add_query_arg( array( 'pmp-listener' => 'coinsnap' ), home_url( 'index.php' ) ) );
 		}
-		public static function getApiKey() {
+	public static function getApiKey() {
 			return pmpro_getOption( 'coinsnap_api_key');
 		}
 		public static function getStoreId() {
