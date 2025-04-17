@@ -8,7 +8,7 @@
  * Text Domain:     coinsnap-for-paid-memberships-pro
  * Domain Path:     /languages
  * Requires PHP:    7.4
- * Tested up to:    6.7
+ * Tested up to:    6.8
  * Requires at least: 5.2
  * Requires Plugins: paid-memberships-pro
  * PMPro tested up to: 3.4.4
@@ -412,15 +412,15 @@ add_action('plugins_loaded', function (): void {
                 if($checkInvoice['error'] === 'currencyError'){
                             $errorMessage = sprintf( 
                             /* translators: 1: Currency */
-                            __( 'Currency %1$s is not supported by Coinsnap', 'paid-memberships-pro' ), strtoupper( $pmpro_currency ));
+                            __( 'Currency %1$s is not supported by Coinsnap', 'coinsnap-for-paid-memberships-pro' ), strtoupper( $pmpro_currency ));
                 }      
                 elseif($checkInvoice['error'] === 'amountError'){
                             $errorMessage = sprintf( 
                             /* translators: 1: Amount, 2: Currency */
-                            __( 'Invoice amount cannot be less than %1$s %2$s', 'paid-memberships-pro' ), $checkInvoice['min_value'], strtoupper( $pmpro_currency ));
+                            __( 'Invoice amount cannot be less than %1$s %2$s', 'coinsnap-for-paid-memberships-pro' ), $checkInvoice['min_value'], strtoupper( $pmpro_currency ));
                 }
                 
-                $order->error = $errorMessage;
+                $order->error = esc_html($errorMessage);
                 return false;
             }
             

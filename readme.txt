@@ -1,7 +1,7 @@
 === Bitcoin payment for Paid Memberships Pro ===
 Contributors: coinsnap
 Tags:  Coinsnap, Paid Memberships Pro, Bitcoin, Lightning, Membership 
-Tested up to: 6.7
+Tested up to: 6.8
 Stable tag: 1.0.0
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
