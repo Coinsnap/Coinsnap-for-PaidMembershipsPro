@@ -11,7 +11,7 @@
  * Tested up to:    6.8
  * Requires at least: 5.2
  * Requires Plugins: paid-memberships-pro
- * PMPro tested up to: 3.4.4
+ * PMPro tested up to: 3.4.6
  * License:         GPL2
  * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
  *
