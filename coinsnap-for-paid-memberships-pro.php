@@ -207,7 +207,7 @@ add_action('plugins_loaded', function (): void {
             
 	}
         
-        public function enqueueAdminScripts() {
+        public static function enqueueAdminScripts() {
             // Register the CSS file
             wp_register_style( 'coinsnappmpro-admin-styles', plugins_url('assets/css/backend-style.css', __FILE__ ), array(), COINSNAPPMPRO_PLUGIN_VERSION );
             // Enqueue the CSS file
@@ -221,7 +221,7 @@ add_action('plugins_loaded', function (): void {
             ));
         }
         
-        public function coinsnapConnectionHandler(){
+        public static function coinsnapConnectionHandler(){
             global $pmpro_currency;
             $_nonce = filter_input(INPUT_POST,'_wpnonce',FILTER_SANITIZE_STRING);
 
