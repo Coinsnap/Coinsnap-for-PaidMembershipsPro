@@ -228,7 +228,7 @@ add_action('plugins_loaded', function (): void {
             if(empty(self::getApiUrl()) || empty(self::getApiKey())){
                 $response = [
                         'result' => false,
-                        'message' => __('PMPro: empty gateway URL or API Key', 'coinsnap-for-gravity-forms')
+                        'message' => __('PMPro: empty gateway URL or API Key', 'coinsnap-for-paid-memberships-pro')
                 ];
                 self::sendJsonResponse($response);
             }
@@ -253,7 +253,7 @@ add_action('plugins_loaded', function (): void {
                 catch (\Exception $e) {
                     $response = [
                             'result' => false,
-                            'message' => __('PMPro: API connection is not established', 'coinsnap-for-gravity-forms')
+                            'message' => __('PMPro: API connection is not established', 'coinsnap-for-paid-memberships-pro')
                     ];
                     self::sendJsonResponse($response);
                 }
@@ -263,18 +263,18 @@ add_action('plugins_loaded', function (): void {
             }
 
             if(isset($checkInvoice) && $checkInvoice['result']){
-                $connectionData = __('Min order amount is', 'coinsnap-for-gravity-forms') .' '. $checkInvoice['min_value'].' '.$pmpro_currency;
+                $connectionData = __('Min order amount is', 'coinsnap-for-paid-memberships-pro') .' '. $checkInvoice['min_value'].' '.$pmpro_currency;
             }
             else {
-                $connectionData = __('No payment method is configured', 'coinsnap-for-gravity-forms');
+                $connectionData = __('No payment method is configured', 'coinsnap-for-paid-memberships-pro');
             }
 
             $_message_disconnected = ($_provider !== 'btcpay')? 
-                __('PMPro: Coinsnap server is disconnected', 'coinsnap-for-gravity-forms') :
-                __('PMPro: BTCPay server is disconnected', 'coinsnap-for-gravity-forms');
+                __('PMPro: Coinsnap server is disconnected', 'coinsnap-for-paid-memberships-pro') :
+                __('PMPro: BTCPay server is disconnected', 'coinsnap-for-paid-memberships-pro');
             $_message_connected = ($_provider !== 'btcpay')?
-                __('PMPro: Coinsnap server is connected', 'coinsnap-for-gravity-forms') : 
-                __('PMPro: BTCPay server is connected', 'coinsnap-for-gravity-forms');
+                __('PMPro: Coinsnap server is connected', 'coinsnap-for-paid-memberships-pro') : 
+                __('PMPro: BTCPay server is connected', 'coinsnap-for-paid-memberships-pro');
 
             if( wp_verify_nonce($_nonce,'coinsnappmpro-ajax-nonce') ){
                 $response = ['result' => false,'message' => $_message_disconnected];
@@ -300,7 +300,7 @@ add_action('plugins_loaded', function (): void {
                 catch (\Exception $e) {
                     $response = [
                             'result' => false,
-                            'message' => __('PMPro: API connection is not established', 'coinsnap-for-gravity-forms')
+                            'message' => __('PMPro: API connection is not established', 'coinsnap-for-paid-memberships-pro')
                     ];
                 }
 
@@ -524,8 +524,8 @@ add_action('plugins_loaded', function (): void {
             <tr class="gateway gateway_btcpay" <?php if($gateway != "btcpay") { ?>style="display: none;"<?php } ?>>
                 <th scope="row" valign="top"><label for="btcpay_server_url"><?php esc_html_e('BTCPay server URL*', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
                 <td><input type="text" placeholder="https://" id="btcpay_server_url" name="btcpay_server_url" value="<?php echo esc_attr($values['btcpay_server_url'])?>" class="regular-text code" /><br/>
-                    <a href="#" class="btcpay-apikey-link"><?php echo __('Check connection', 'coinsnap-for-paid-memberships-pro' );?></a><br/><br/>
-                    <button class="button btcpay-apikey-link" type="button" id="btcpay_wizard_button" target="_blank"><?php echo __('Generate API key','coinsnap-for-paid-memberships-pro');?></button></td>
+                    <a href="#" class="btcpay-apikey-link"><?php echo esc_html__('Check connection', 'coinsnap-for-paid-memberships-pro' );?></a><br/><br/>
+                    <button class="button btcpay-apikey-link" type="button" id="btcpay_wizard_button" target="_blank"><?php echo esc_html__('Generate API key','coinsnap-for-paid-memberships-pro');?></button></td>
             </tr>
             <tr class="gateway gateway_btcpay" <?php if($gateway != "btcpay") { ?>style="display: none;"<?php } ?>>
                 <th scope="row" valign="top"><label for="btcpay_store_id"><?php esc_html_e('Store ID*', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
