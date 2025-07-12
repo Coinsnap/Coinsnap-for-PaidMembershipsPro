@@ -1,5 +1,28 @@
 jQuery(document).ready(function ($) {
     
+    if($('#coinsnap_provider').length){
+        
+        setProvider();
+        $('#coinsnap_provider').change(function(){
+            setProvider();
+        });
+    }
+    
+    function setProvider(){
+        if($('#coinsnap_provider').val() === 'coinsnap'){
+            $('tr.gateway_btcpay').hide();
+            $('tr.gateway_btcpay input[type=text]').removeAttr('required');
+            $('tr.gateway_coinsnap').show();
+            $('tr.gateway_coinsnap input[type=text]').attr('required','required');
+        }
+        else {
+            $('tr.gateway_coinsnap').hide();
+            $('tr.gateway_coinsnap input[type=text]').removeAttr('required');
+            $('tr.gateway_btcpay').show();
+            $('tr.gateway_btcpay input[type=text]').attr('required','required');
+        }
+    }
+    
     function isValidPMProUrl(serverUrl) {
         try {
             const url = new URL(serverUrl);
@@ -14,7 +37,7 @@ jQuery(document).ready(function ($) {
         return true;
     }
 
-    $('.btcpay-apikey-link').click(function(e) {
+    $('.pmpro-btcpay-apikey-link').click(function(e) {
         e.preventDefault();
         const host = $('#btcpay_server_url').val();
 	if (isValidPMProUrl(host)) {

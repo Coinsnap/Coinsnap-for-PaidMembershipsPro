@@ -11,7 +11,7 @@
  * Tested up to:    6.8
  * Requires at least: 5.2
  * Requires Plugins: paid-memberships-pro
- * PMPro tested up to: 3.4.7
+ * PMPro tested up to: 3.5.1
  * License:         GPL2
  * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
  *
@@ -57,11 +57,6 @@ function pmpro_gateway_notice(){?>
 
 add_action('init', function() {
     
-//  Session launcher
-    if ( ! session_id() ) {
-        session_start();
-    }
-    
 // Setting up and handling custom endpoint for api key redirect from BTCPay Server.
     add_rewrite_endpoint('coinsnap-for-paid-memberships-pro-btcpay-settings-callback', EP_ROOT);
 });
@@ -73,8 +68,6 @@ add_filter('request', function($vars) {
     }
     return $vars;
 });
-
-
 
 add_action('init', array('PMProGateway_coinsnap', 'process_webhook'));
 add_action('plugins_loaded', function (): void {
@@ -96,7 +89,7 @@ add_action('plugins_loaded', function (): void {
         public const WEBHOOK_EVENTS = ['New','Expired','Settled','Processing'];	 
 			
 	function __construct($gateway = null){
-            $this->gateway = ($gateway == "coinsnap" || $gateway == "btcpay")? 'coinsnap' : $gateway;
+            $this->gateway = $gateway;
             return $this->gateway;
 	}
 		
@@ -106,10 +99,7 @@ add_action('plugins_loaded', function (): void {
             add_filter('pmpro_payment_options', array('PMProGateway_coinsnap', 'pmpro_payment_options'));
             add_filter('pmpro_payment_option_fields', array('PMProGateway_coinsnap', 'pmpro_payment_option_fields'), 10, 2);
             				
-            $gateway = pmpro_getGateway();
-				
-            if($gateway == "coinsnap" || $gateway == "btcpay"){					
-		add_filter('pmpro_include_billing_address_fields', '__return_false');
+            	add_filter('pmpro_include_billing_address_fields', '__return_false');
 		add_filter('pmpro_include_payment_information_fields', '__return_false');
 		add_filter('pmpro_required_billing_fields', array('PMProGateway_coinsnap', 'pmpro_required_billing_fields'));
 		add_filter('pmpro_checkout_before_change_membership_level', ['PMProGateway_coinsnap', 'pmpro_checkout_before_change_membership_level'], 1, 2);
@@ -123,9 +113,6 @@ add_action('plugins_loaded', function (): void {
                     add_action('wp_ajax_coinsnap_connection_handler', ['PMProGateway_coinsnap', 'coinsnapConnectionHandler'] );
                     add_action('wp_ajax_pmpro_btcpay_server_apiurl_handler', ['PMProGateway_coinsnap', 'btcpayApiUrlHandler']);
                 }
-            }
-            
-            
             
             
             
@@ -140,7 +127,7 @@ add_action('plugins_loaded', function (): void {
                 return;
             }
 
-            $CoinsnapBTCPaySettingsUrl = admin_url('admin.php?page=pmpro-paymentsettings');
+            $CoinsnapBTCPaySettingsUrl = admin_url('admin.php?page=pmpro-paymentsettings&edit_gateway=coinsnap');
 
             $rawData = file_get_contents('php://input');
 
@@ -157,10 +144,12 @@ add_action('plugins_loaded', function (): void {
             // Data does get submitted with url-encoded payload, so parse $_POST here.
             if (!empty($_POST) || wp_verify_nonce(filter_input(INPUT_POST,'wp_nonce',FILTER_SANITIZE_FULL_SPECIAL_CHARS),'-1')) {
                 $data['apiKey'] = filter_input(INPUT_POST,'apiKey',FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?? null;
-                $permissions = (isset($_POST['permissions']) && is_array($_POST['permissions']))? $_POST['permissions'] : null;
-                if (isset($permissions)) {
-                    foreach ($permissions as $key => $value) {
-                        $data['permissions'][$key] = sanitize_text_field($permissions[$key] ?? null);
+                if(isset($_POST['permissions'])){
+                    $permissions = array_map('sanitize_text_field', wp_unslash($_POST['permissions']));
+                    if(is_array($permissions)){
+                        foreach ($permissions as $key => $value) {
+                            $data['permissions'][$key] = sanitize_text_field($permissions[$key] ?? null);
+                        }
                     }
                 }
             }
@@ -172,7 +161,7 @@ add_action('plugins_loaded', function (): void {
 
                     pmpro_setOption( "btcpay_api_key", $apiData->getApiKey());
                     pmpro_setOption( "btcpay_store_id", $apiData->getStoreID());
-                    pmpro_setOption( "gateway", 'btcpay');
+                    pmpro_setOption( "coinsnap_provider", 'btcpay');
 
                     $notice->addNotice('success', __('Successfully received api key and store id from BTCPay Server API. Please finish setup by saving this settings form.', 'coinsnap-for-paid-memberships-pro'));
 
@@ -209,12 +198,15 @@ add_action('plugins_loaded', function (): void {
         }
         
         public static function enqueueAdminScripts() {
+            
             // Register the CSS file
             wp_register_style( 'coinsnappmpro-admin-styles', plugins_url('assets/css/backend-style.css', __FILE__ ), array(), COINSNAPPMPRO_PLUGIN_VERSION );
             // Enqueue the CSS file
             wp_enqueue_style( 'coinsnappmpro-admin-styles' );
             //  Enqueue admin fileds handler script
-            wp_enqueue_script('coinsnappmpro-admin-fields',plugins_url('assets/js/adminFields.js', __FILE__ ),[ 'jquery' ],COINSNAPPMPRO_PLUGIN_VERSION,true);
+            if('coinsnap' === filter_input(INPUT_GET,'edit_gateway',FILTER_SANITIZE_FULL_SPECIAL_CHARS)){
+                wp_enqueue_script('coinsnappmpro-admin-fields',plugins_url('assets/js/adminFields.js', __FILE__ ),[ 'jquery' ],COINSNAPPMPRO_PLUGIN_VERSION,true);
+            }
             wp_enqueue_script('coinsnappmpro-connection-check',plugins_url('assets/js/connectionCheck.js', __FILE__ ),[ 'jquery' ],COINSNAPPMPRO_PLUGIN_VERSION,true);
             wp_localize_script('coinsnappmpro-connection-check', 'coinsnappmpro_ajax', array(
                 'ajax_url' => admin_url('admin-ajax.php'),
@@ -463,13 +455,14 @@ add_action('plugins_loaded', function (): void {
 			
 	public static function pmpro_gateways($gateways){
             if(empty($gateways['coinsnap'])){
-                $gateways = array_slice($gateways, 0, 1) + array("coinsnap" => 'Coinsnap') + array("btcpay" => 'BTCPay') + array_slice($gateways, 1);
+                $gateways = array_slice($gateways, 0, 1) + array("coinsnap" => 'Coinsnap') + array_slice($gateways, 1);
             }
             return $gateways;
 	}
 		
 	public static function getGatewayOptions(){
             $options = array(
+                'coinsnap_provider',
                 'coinsnap_store_id',
                 'coinsnap_api_key',
                 'coinsnap_button_text',
@@ -500,51 +493,57 @@ add_action('plugins_loaded', function (): void {
 
             $coinsnap_expired_status = !empty($values['coinsnap_expired_status']) ? $values['coinsnap_expired_status'] : 'cancelled';
             $coinsnap_settled_status = !empty($values['coinsnap_settled_status']) ? $values['coinsnap_settled_status'] : 'success';				
-            $coinsnap_processing_status = !empty($values['coinsnap_processing_status']) ? $values['coinsnap_processing_status'] : 'success';?>
+            $coinsnap_processing_status = !empty($values['coinsnap_processing_status']) ? $values['coinsnap_processing_status'] : 'success';
+            
+            ?>
 
-            <tr class="pmpro_settings_divider gateway gateway_coinsnap" <?php if($gateway !== "coinsnap") { ?>style="display: none;"<?php } ?>>
+            <tr class="pmpro_settings_divider gateway" <?php if($gateway !== "coinsnap") { ?>style="display: none;"<?php } ?>>
                 <td colspan="2">
-                    <hr /><h2 class="title"><?php esc_html_e('Coinsnap Settings', 'coinsnap-for-paid-memberships-pro' ); ?></h2>
-                    <div class="coinsnapConnectionStatus"></div></td></tr>
-            <tr class="pmpro_settings_divider gateway gateway_btcpay" <?php if($gateway !== "btcpay") { ?>style="display: none;"<?php } ?>>
-                <td colspan="2">
-                    <hr /><h2 class="title"><?php esc_html_e('BTCPay Settings', 'coinsnap-for-paid-memberships-pro' ); ?></h2>
-                    <div class="coinsnapConnectionStatus"></div></td></tr>
-            <tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
+                    <hr /><h2 class="title"><?php esc_html_e('Coinsnap Settings', 'coinsnap-for-paid-memberships-pro' );?></h2>
+                    <div class="coinsnapConnectionStatus"></div></td>
+            </tr>
+            <tr class="gateway">
+                <th scope="row" valign="top"><label for="coinsnap_provider"><?php esc_html_e( 'Payment provider', 'coinsnap-for-paid-memberships-pro' ); ?>:</label></th>
+                <td><select id="coinsnap_provider" name="coinsnap_provider">
+                        <option value="coinsnap" <?php selected( $values['coinsnap_provider'], 'coinsnap' ); ?>><?php echo esc_html('Coinsnap'); ?></option>
+                        <option value="btcpay" <?php selected( $values['coinsnap_provider'], 'btcpay' ); ?>><?php echo esc_html('BTCPay Server'); ?></option>
+                    </select></td>
+            </tr>
+            <tr class="gateway gateway_coinsnap">
                 <th scope="row" valign="top"><label for="coinsnap_store_id"><?php esc_html_e('Store ID*', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
                 <td><input type="text" id="coinsnap_store_id" name="coinsnap_store_id" value="<?php echo esc_attr($values['coinsnap_store_id'])?>" class="regular-text code" /></td>
             </tr>
-            <tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
+            <tr class="gateway gateway_coinsnap">
                 <th scope="row" valign="top"><label for="coinsnap_api_key"><?php esc_html_e('API Key*', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
                 <td><input type="text" id="coinsnap_api_key" name="coinsnap_api_key" value="<?php echo esc_attr($values['coinsnap_api_key'])?>" class="regular-text code" /></td>
             </tr>
-            <tr class="gateway gateway_coinsnap" <?php if($gateway != "coinsnap") { ?>style="display: none;"<?php } ?>>
+            <tr class="gateway gateway_coinsnap">
                 <th scope="row" valign="top"><label for="coinsnap_button_text"><?php esc_html_e('Button text', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
                 <td><input type="text" id="coinsnap_button_text" name="coinsnap_button_text" value="<?php echo (!empty($values['coinsnap_button_text']))? esc_attr($values['coinsnap_button_text']) : esc_html__('Coinsnap (Bitcoin + Lightning)', 'coinsnap-for-paid-memberships-pro' );?>" class="regular-text code" /></td>
             </tr>
-            <tr class="gateway gateway_btcpay" <?php if($gateway != "btcpay") { ?>style="display: none;"<?php } ?>>
+            <tr class="gateway gateway_btcpay">
                 <th scope="row" valign="top"><label for="btcpay_server_url"><?php esc_html_e('BTCPay server URL*', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
                 <td><input type="text" placeholder="https://" id="btcpay_server_url" name="btcpay_server_url" value="<?php echo esc_attr($values['btcpay_server_url'])?>" class="regular-text code" /><br/>
-                    <a href="#" class="btcpay-apikey-link"><?php echo esc_html__('Check connection', 'coinsnap-for-paid-memberships-pro' );?></a><br/><br/>
-                    <button class="button btcpay-apikey-link" type="button" id="btcpay_wizard_button" target="_blank"><?php echo esc_html__('Generate API key','coinsnap-for-paid-memberships-pro');?></button></td>
+                    <a href="#" class="pmpro-btcpay-apikey-link"><?php echo esc_html__('Check connection', 'coinsnap-for-paid-memberships-pro' );?></a><br/><br/>
+                    <button class="button pmpro-btcpay-apikey-link" type="button" id="btcpay_wizard_button" target="_blank"><?php echo esc_html__('Generate API key','coinsnap-for-paid-memberships-pro');?></button></td>
             </tr>
-            <tr class="gateway gateway_btcpay" <?php if($gateway != "btcpay") { ?>style="display: none;"<?php } ?>>
+            <tr class="gateway gateway_btcpay">
                 <th scope="row" valign="top"><label for="btcpay_store_id"><?php esc_html_e('Store ID*', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
                 <td><input type="text" id="btcpay_store_id" name="btcpay_store_id" value="<?php echo esc_attr($values['btcpay_store_id'])?>" class="regular-text code" /></td>
             </tr>
-            <tr class="gateway gateway_btcpay" <?php if($gateway != "btcpay") { ?>style="display: none;"<?php } ?>>
+            <tr class="gateway gateway_btcpay">
                 <th scope="row" valign="top"><label for="btcpay_api_key"><?php esc_html_e('API Key*', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
                 <td><input type="text" id="btcpay_api_key" name="btcpay_api_key" value="<?php echo esc_attr($values['btcpay_api_key'])?>" class="regular-text code" /></td>
             </tr>
-            <tr class="gateway gateway_btcpay" <?php if($gateway != "btcpay") { ?>style="display: none;"<?php } ?>>
+            <tr class="gateway gateway_btcpay">
                 <th scope="row" valign="top"><label for="btcpay_button_text"><?php esc_html_e('Button text', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
                 <td><input type="text" id="btcpay_button_text" name="btcpay_button_text" value="<?php echo (!empty($values['btcpay_button_text']))? esc_attr($values['btcpay_button_text']) : esc_html__('BTCPay server (Bitcoin)', 'coinsnap-for-paid-memberships-pro' );?>" class="regular-text code" /></td>
             </tr>
             
-            <tr class="gateway gateway_coinsnap gateway_btcpay" <?php if($gateway !== "coinsnap" && $gateway !== "btcpay") { ?>style="display: none;"<?php }?>>
+            <tr class="gateway">
                 <th scope="row" valign="top"><label for="coinsnap_autoredirect"><?php esc_html_e('Redirect after payment', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
                 <td><input type="checkbox"<?php echo ($values['coinsnap_autoredirect']<1)? '' : ' checked="checked"';?> id="coinsnap_autoredirect" name="coinsnap_autoredirect" value="1" class="regular-text code" /></td></tr>
-            <tr class="gateway gateway_coinsnap gateway_btcpay" <?php if($gateway !== "coinsnap" && $gateway !== "btcpay") { ?>style="display: none;"<?php } ?>>
+            <tr class="gateway">
                 <th scope="row" valign="top"><label for="coinsnap_expired_status"><?php esc_html_e( 'Expired Status', 'coinsnap-for-paid-memberships-pro' ); ?>:</label></th>
                 <td><select id="coinsnap_expired_status" name="coinsnap_expired_status">
                     <?php foreach ( $statuses as $status ) { ?>
@@ -552,7 +551,7 @@ add_action('plugins_loaded', function (): void {
                     <?php } ?>
                     </select></td></tr>
             
-            <tr class="gateway gateway_coinsnap gateway_btcpay" <?php if($gateway !== "coinsnap" && $gateway !== "btcpay") { ?>style="display: none;"<?php } ?>>
+            <tr class="gateway">
                 <th scope="row" valign="top"><label for="coinsnap_settled_status"><?php esc_html_e( 'Settled Status', 'coinsnap-for-paid-memberships-pro' ); ?>:</label></th>
                 <td><select id="coinsnap_settled_status" name="coinsnap_settled_status">
                     <?php foreach ( $statuses as $status ) { ?>
@@ -560,7 +559,7 @@ add_action('plugins_loaded', function (): void {
                     <?php } ?>
                     </select></td></tr>
 
-            <tr class="gateway gateway_coinsnap gateway_btcpay" <?php if($gateway != "coinsnap" && $gateway !== "btcpay") { ?>style="display: none;"<?php } ?>>
+            <tr class="gateway">
                 <th scope="row" valign="top"><label for="coinsnap_processing_status"><?php esc_html_e( 'Processing Status', 'coinsnap-for-paid-memberships-pro' ); ?>:</label></th>
 		<td><select id="coinsnap_processing_status" name="coinsnap_processing_status">
                     <?php foreach ( $statuses as $status ) { ?>
@@ -739,7 +738,7 @@ add_action('plugins_loaded', function (): void {
         //  =============================== API OPTIONS =======================================
 		
 	public static function get_payment_provider() {
-            return (pmpro_getOption( 'gateway') === 'btcpay')? 'btcpay' : 'coinsnap';
+            return (pmpro_getOption( 'coinsnap_provider') === 'btcpay')? 'btcpay' : 'coinsnap';
         }
         
         public static function get_webhook_url() {
@@ -961,54 +960,6 @@ add_action('plugins_loaded', function (): void {
 
             return null;
         }
-
-        public static function updateWebhook(string $webhookId,string $webhookUrl,string $secret,bool $enabled,bool $automaticRedelivery,?array $events): ?WebhookResult {
-            try {
-                $whClient = new Webhook(self::getApiUrl(), self::getApiKey() );
-                $webhook = $whClient->updateWebhook(
-                    self::getStoreId(),
-                    $webhookUrl,
-                    $webhookId,
-                    $events ?? self::WEBHOOK_EVENTS,
-                    $enabled,
-                    $automaticRedelivery,
-                    $secret
-                );
-                return $webhook;
-            }
-            catch (\Throwable $e) {
-                $errorMessage = __('Error updating existing Webhook from Coinsnap: ', 'coinsnap-for-paid-memberships-pro' ) . $e->getMessage();
-                throw new PaymentGatewayException(esc_html($errorMessage));
-            }
-        }
     }
-    
-    //  BTCPay gateway class
-    class PMProGateway_btcpay extends PMProGateway {
-        public static function getGatewayOptions(){
-            $options = array(
-                'coinsnap_store_id',
-                'coinsnap_api_key',
-                'coinsnap_button_text',
-                'btcpay_server_url',
-                'btcpay_store_id',
-                'btcpay_api_key',
-                'btcpay_button_text',
-                'coinsnap_autoredirect',
-                'coinsnap_expired_status',
-                'coinsnap_settled_status',
-                'coinsnap_processing_status',
-                'currency'
-            );
-            return $options;
-	}
-        
-        function process(&$order){
-            $order->setGateway('coinsnap');
-            $coinsnapGateway = new PMProGateway_coinsnap();
-            $coinsnapGateway->process($order);
-        }
-    }
-    
 });
                                                                            

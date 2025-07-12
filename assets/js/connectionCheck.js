@@ -4,8 +4,8 @@ jQuery(function ($) {
     
     let connectionCheckElement = '';
     
-    if($('hr.wp-header-end').length){
-        connectionCheckElement = 'hr.wp-header-end';
+    if($('#pmpro_notifications').length){
+        connectionCheckElement = '#pmpro_notifications';
     }
     
     if(connectionCheckElement !== ''){
