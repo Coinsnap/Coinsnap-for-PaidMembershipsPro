@@ -11,7 +11,7 @@
  * Tested up to:    6.8
  * Requires at least: 5.2
  * Requires Plugins: paid-memberships-pro
- * PMPro tested up to: 3.5.1
+ * PMPro tested up to: 3.5.2
  * License:         GPL2
  * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
  *
@@ -65,11 +65,12 @@ add_action('init', function() {
 add_filter('request', function($vars) {
     if (isset($vars['coinsnap-for-paid-memberships-pro-btcpay-settings-callback'])) {
         $vars['coinsnap-for-paid-memberships-pro-btcpay-settings-callback'] = true;
+        $vars['coinsnap-for-pmpro-btcpay-nonce'] = wp_create_nonce('coinsnappmpro-btcpay-nonce');
     }
     return $vars;
 });
 
-add_action('init', array('PMProGateway_coinsnap', 'process_webhook'));
+add_action('init', array('PMProGateway_coinsnap', 'coinsnappmpro_processWebhook'));
 add_action('plugins_loaded', function (): void {
     
     if (!class_exists('PMProGateway')) {
@@ -102,7 +103,7 @@ add_action('plugins_loaded', function (): void {
             	add_filter('pmpro_include_billing_address_fields', '__return_false');
 		add_filter('pmpro_include_payment_information_fields', '__return_false');
 		add_filter('pmpro_required_billing_fields', array('PMProGateway_coinsnap', 'pmpro_required_billing_fields'));
-		add_filter('pmpro_checkout_before_change_membership_level', ['PMProGateway_coinsnap', 'pmpro_checkout_before_change_membership_level'], 1, 2);
+		add_filter('pmpro_checkout_before_change_membership_level', ['PMProGateway_coinsnap', 'coinsnappmpro_checkout_before_change_membership_level'], 1, 2);
 		add_filter('pmpro_checkout_default_submit_button', ['PMProGateway_coinsnap', 'pmpro_checkout_default_submit_button']);
                 
                 add_action('pmpro_add_order',['PMProGateway_coinsnap', 'set_gateway_to_order']);
@@ -124,6 +125,10 @@ add_action('plugins_loaded', function (): void {
             
             // Only continue on a coinsnap-for-paid-memberships-pro-btcpay-settings-callback request.    
             if (!isset( $wp_query->query_vars['coinsnap-for-paid-memberships-pro-btcpay-settings-callback'])) {
+                return;
+            }
+            
+            if(!isset($wp_query->query_vars['coinsnap-for-pmpro-btcpay-nonce']) || !wp_verify_nonce($wp_query->query_vars['coinsnap-for-pmpro-btcpay-nonce'],'coinsnappmpro-btcpay-nonce')){
                 return;
             }
 
@@ -362,7 +367,6 @@ add_action('plugins_loaded', function (): void {
         static function coinsnap_notice(){
         
             $page = (filter_input(INPUT_GET,'page',FILTER_SANITIZE_FULL_SPECIAL_CHARS ))? filter_input(INPUT_GET,'page',FILTER_SANITIZE_FULL_SPECIAL_CHARS ) : '';
-            //$tab = (filter_input(INPUT_GET,'tab',FILTER_SANITIZE_FULL_SPECIAL_CHARS ))? filter_input(INPUT_GET,'tab',FILTER_SANITIZE_FULL_SPECIAL_CHARS ) : '';
 
             if($page === 'pmpro-paymentsettings'){
 
@@ -660,7 +664,7 @@ add_action('plugins_loaded', function (): void {
                    
         }
 
-        static function pmpro_checkout_before_change_membership_level($user_id, $morder){
+        static function coinsnappmpro_checkout_before_change_membership_level($user_id, $morder){
             global $wpdb, $discount_code_id, $pmpro_currency;
                                 
             if(empty($morder)){return;}
@@ -671,10 +675,10 @@ add_action('plugins_loaded', function (): void {
                 $wpdb->insert($wpdb->pmpro_discount_codes_uses, ['code_id' => $discount_code_id, 'user_id' => $user_id, 'order_id' => $morder->id, 'timestamp' => now()], ['%s', '%s', '%s', '%s']);
             }
 							
-            $morder->Gateway->sendToCoinsnap($morder);
+            $morder->Gateway->coinsnappmpro_getInvoice($morder);
 	}
         
-        public function sendToCoinsnap($order){
+        public function coinsnappmpro_getInvoice($order){
             global $pmpro_currency;	
             $amount = round($order->subtotal, 2);
             
@@ -764,7 +768,7 @@ add_action('plugins_loaded', function (): void {
         //  =============================== WEBHOOKS =======================================
         
         
-        public static function process_webhook(){
+        public static function coinsnappmpro_processWebhook(){
 			
             if ( null === ( filter_input(INPUT_GET,'pmp-listener') ) || filter_input(INPUT_GET,'pmp-listener') !== 'coinsnap' ) {
                 return;
