@@ -1,4 +1,4 @@
-=== Bitcoin payment for Paid Memberships Pro ===
+=== Coinsnap for Paid Memberships Pro ===
 Contributors: coinsnap
 Tags:  Coinsnap, Paid Memberships Pro, Bitcoin, Lightning, Membership 
 Tested up to: 6.8
@@ -182,5 +182,5 @@ Plugin's page on Coinsnap website: https://coinsnap.io/en/
 11. QR code on the Bitcoin payment page
   
 == Changelog ==
-= 1.0 :: 2024-01-20 =
+= 1.0.0 :: 2024-01-20 =
 * Initial release. 

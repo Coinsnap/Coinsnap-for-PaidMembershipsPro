@@ -64,7 +64,7 @@ class Store extends AbstractClient{
         $method = 'GET';
         $response = $this->getHttpClient()->request($method, $url, $headers);
         if ($response->getStatus() === 200) {
-
+            
             $json_decode = json_decode($response->getBody(), true, 512, JSON_THROW_ON_ERROR);
 
             if(json_last_error() === JSON_ERROR_NONE){
@@ -72,18 +72,24 @@ class Store extends AbstractClient{
                 if(count($json_decode) > 0){
                     $result['onchain'] = false;
                     $result['lightning'] = false;
+                    $result['usdt'] = false;
                     foreach($json_decode as $storePaymentMethod){
+                        
                         if($storePaymentMethod['enabled'] > 0 && stripos($storePaymentMethod['paymentMethodId'],'BTC') !== false){
                             $result['onchain'] = true;
                         }
-                        if($storePaymentMethod['enabled'] > 0 && $storePaymentMethod['paymentMethodId'] === 'Lightning') {
+                        if($storePaymentMethod['enabled'] > 0 && ($storePaymentMethod['paymentMethodId'] === 'Lightning' || stripos($storePaymentMethod['paymentMethodId'],'-LN') !== false)) {
                             $result['lightning'] = true;
                         }
+                        if($storePaymentMethod['enabled'] > 0 && stripos($storePaymentMethod['paymentMethodId'],'USDT') !== false){
+                            $result['usdt'] = true;
+                        }
+                        
                     }
                 }
             }
             else {
-                $result = array('error' => json_last_error());
+                $result = array('error' => ['code' => json_last_error(),'message' => json_last_error_msg(),'response' => $response->getBody()]);
             }
             return new \Coinsnap\Result\Store(array('code' => $response->getStatus(), 'result' => $result));
         }
