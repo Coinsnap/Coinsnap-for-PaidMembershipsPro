@@ -1,6 +1,6 @@
 <?php
 /*
- * Plugin Name:     Coinsnap for Paid Memberships Pro
+ * Plugin Name:     Bitcoin payment for Paid Memberships Pro
  * Description:     With this Bitcoin payment plugin for Paid Memberships Pro you can now charge for your memberships in Bitcoin!
  * Version:         1.0.0
  * Author:          Coinsnap
@@ -38,11 +38,11 @@ function coinsnappmpro_dependency_check(){
         deactivate_plugins(plugin_basename(__FILE__));
     }
 }
-add_action('admin_init', 'coinsnappmpro_dependency_check');
+
 
 function coinsnappmpro_dependency_notice(){?>
     <div class="notice notice-error">
-        <p><?php echo esc_html_e('Coinsnap for Paid Memberships Pro plugin requires Paid Memberships Pro to be installed and activated.','coinsnap-for-paid-memberships-pro'); ?></p>
+        <p><?php echo esc_html_e('Bitcoin payment for Paid Memberships Pro plugin requires Paid Memberships Pro to be installed and activated.','coinsnap-for-paid-memberships-pro'); ?></p>
     </div>
     <?php
 }
@@ -69,26 +69,32 @@ add_filter('request', function($vars) {
     return $vars;
 });
 
-    
 
 
-
-add_action('init', array('PMProGateway_coinsnap', 'coinsnappmpro_processWebhook'));
 add_action('plugins_loaded', 'coinsnappmpro_init');
 
 function coinsnappmpro_init(){
     
-    require_once WP_CONTENT_DIR . '/plugins/paid-memberships-pro/classes/gateways/class.pmprogateway.php';
+    if(!file_exists(WP_CONTENT_DIR . '/plugins/paid-memberships-pro/classes/gateways/class.pmprogateway.php')){
+        coinsnappmpro_dependency_check();
+        coinsnappmpro_dependency_notice();
+        return;
+    }
     
+    coinsnappmpro_dependency_check();
+    
+    require_once WP_CONTENT_DIR . '/plugins/paid-memberships-pro/classes/gateways/class.pmprogateway.php';
     require_once(dirname(__FILE__) . "/coinsnap-for-pmpro-class.php");
     new PMProGateway_coinsnap();
     
     if (!class_exists('PMProGateway')) {
-        add_action('admin_notices', 'coinsnappmpro_gateway_notice');
+        
+        coinsnappmpro_dependency_notice();
         return;
     }    
     
     add_action('init', array('PMProGateway_coinsnap', 'init'));
+    add_action('init', array('PMProGateway_coinsnap', 'coinsnappmpro_processWebhook'));
     add_filter('plugin_action_links', array('PMProGateway_coinsnap', 'plugin_action_links'), 10, 2 );    
 }
 

@@ -196,3 +196,7 @@ We make a real donation payment in our test PaidMembershipsPro site.
 The Bitcoin + Lightning payment page is now displayed, offering the payer the option to pay with Bitcoin or also with Lightning. Both methods are integrated in the displayed QR code.
 
 ![QR code on the Bitcoin payment page](https://resources.coinsnap.org/products/paidmembershipspro/images/11.png)
+
+## Changelog 
+#### 1.0.0 :: 2025-10-09
+* Initial release in Wordpress Plugin Directory. 

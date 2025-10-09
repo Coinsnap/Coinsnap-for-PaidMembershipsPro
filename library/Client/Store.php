@@ -65,7 +65,7 @@ class Store extends AbstractClient{
         $response = $this->getHttpClient()->request($method, $url, $headers);
         if ($response->getStatus() === 200) {
             
-            $json_decode = json_decode($response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+            $json_decode = json_decode($response->getBody(), true, 512, JSON_INVALID_UTF8_IGNORE);
 
             if(json_last_error() === JSON_ERROR_NONE){
                 $result = array('response' => $json_decode);
