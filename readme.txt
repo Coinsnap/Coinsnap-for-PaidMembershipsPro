@@ -2,7 +2,7 @@
 Contributors: coinsnap
 Tags:  Coinsnap, Paid Memberships Pro, Bitcoin, Lightning, Membership 
 Tested up to: 6.8
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -187,3 +187,7 @@ Plugin's page on Coinsnap website: https://coinsnap.io/en/
 == Changelog ==
 = 1.0.0 :: 2025-10-09 =
 * Initial release in Wordpress Plugin Directory. 
+
+= 1.0.1 :: 2025-10-13 =
+* Update: Added non-supported by BTCPay server currencies handler on invoice request flow.
+* Update: Added custom redirect after payment page in module settings.

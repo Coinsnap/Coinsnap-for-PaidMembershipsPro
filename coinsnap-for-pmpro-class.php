@@ -21,20 +21,20 @@ use Coinsnap\Client\Webhook;
             add_filter('pmpro_payment_options', array('PMProGateway_coinsnap', 'pmpro_payment_options'));
             add_filter('pmpro_payment_option_fields', array('PMProGateway_coinsnap', 'pmpro_payment_option_fields'), 10, 2);
             				
-            	add_filter('pmpro_include_billing_address_fields', '__return_false');
-		add_filter('pmpro_include_payment_information_fields', '__return_false');
-		add_filter('pmpro_required_billing_fields', array('PMProGateway_coinsnap', 'pmpro_required_billing_fields'));
-		add_filter('pmpro_checkout_before_change_membership_level', ['PMProGateway_coinsnap', 'coinsnappmpro_checkout_before_change_membership_level'], 1, 2);
-		add_filter('pmpro_checkout_default_submit_button', ['PMProGateway_coinsnap', 'pmpro_checkout_default_submit_button']);
+            add_filter('pmpro_include_billing_address_fields', '__return_false');
+            add_filter('pmpro_include_payment_information_fields', '__return_false');
+            add_filter('pmpro_required_billing_fields', array('PMProGateway_coinsnap', 'pmpro_required_billing_fields'));
+            add_filter('pmpro_checkout_before_change_membership_level', ['PMProGateway_coinsnap', 'coinsnappmpro_checkout_before_change_membership_level'], 1, 2);
+            add_filter('pmpro_checkout_default_submit_button', ['PMProGateway_coinsnap', 'pmpro_checkout_default_submit_button']);
                 
-                add_action('pmpro_add_order',['PMProGateway_coinsnap', 'set_gateway_to_order']);
+            add_action('pmpro_add_order',['PMProGateway_coinsnap', 'set_gateway_to_order']);
                 
-                if (is_admin()) {
+            if (is_admin()) {
                     add_action('admin_notices', ['PMProGateway_coinsnap', 'coinsnap_notice']);
                     add_action('admin_enqueue_scripts', ['PMProGateway_coinsnap', 'enqueueAdminScripts'] );
                     add_action('wp_ajax_coinsnap_connection_handler', ['PMProGateway_coinsnap', 'coinsnapConnectionHandler'] );
                     add_action('wp_ajax_pmpro_btcpay_server_apiurl_handler', ['PMProGateway_coinsnap', 'btcpayApiUrlHandler']);
-                }
+            }
             
             
             
@@ -395,6 +395,7 @@ use Coinsnap\Client\Webhook;
                 'btcpay_api_key',
                 'btcpay_button_text',
                 'coinsnap_autoredirect',
+                'coinsnap_returnurl',
                 'coinsnap_expired_status',
                 'coinsnap_settled_status',
                 'coinsnap_processing_status',
@@ -467,6 +468,10 @@ use Coinsnap\Client\Webhook;
             <tr class="gateway">
                 <th scope="row" valign="top"><label for="coinsnap_autoredirect"><?php esc_html_e('Redirect after payment', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
                 <td><input type="checkbox"<?php echo ($values['coinsnap_autoredirect']<1)? '' : ' checked="checked"';?> id="coinsnap_autoredirect" name="coinsnap_autoredirect" value="1" class="regular-text code" /></td></tr>
+            <tr class="gateway">
+                <th scope="row" valign="top"><label for="coinsnap_returnurl"><?php esc_html_e('Return URL after payment', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
+                <td><input type="text" id="coinsnap_returnurl" name="coinsnap_returnurl" value="<?php echo esc_attr($values['coinsnap_returnurl'])?>" class="regular-text code" /></td>
+            </tr>
             <tr class="gateway">
                 <th scope="row" valign="top"><label for="coinsnap_expired_status"><?php esc_html_e( 'Expired Status', 'coinsnap-for-paid-memberships-pro' ); ?>:</label></th>
                 <td><select id="coinsnap_expired_status" name="coinsnap_expired_status">
@@ -599,15 +604,17 @@ use Coinsnap\Client\Webhook;
 	}
         
         public function coinsnappmpro_getInvoice($order){
-            global $pmpro_currency;	
+            global $pmpro_currency;
+            
+            $currency = strtoupper($pmpro_currency);
             $amount = round($order->subtotal, 2);
             
             $client =new \Coinsnap\Client\Invoice(self::getApiUrl(), self::getApiKey());
-            $checkInvoice = self::coinsnappmpro_amount_validation($amount,strtoupper($pmpro_currency));
+            $checkInvoice = self::coinsnappmpro_amount_validation($amount,strtoupper($currency));
             
             if($checkInvoice['result'] === true){
             
-                $redirectUrl = esc_url(site_url().'/membership-confirmation/?level=').$order->membership_id;
+                $redirectUrl = (!empty(pmpro_getOption('coinsnap_returnurl')))? pmpro_getOption('coinsnap_returnurl') : esc_url(site_url().'/membership-confirmation/?level=').$order->membership_id;
             
                 $current_user = wp_get_current_user();
                 $buyerEmail = $current_user->user_email;
@@ -623,11 +630,34 @@ use Coinsnap\Client\Webhook;
                             
                 $redirectAutomatically = (pmpro_getOption( 'coinsnap_autoredirect') > 0 )? true : false;
                 $walletMessage = '';
+                
+                if($this->get_payment_provider() === 'btcpay' && $currency !== 'BTC'){
+                    $store = new \Coinsnap\Client\Store($this->getApiUrl(), $this->getApiKey());
+                    $btcpayCurrencies = $store -> getStoreCurrenciesRates($this->getStoreId(),array($currency));
+                    $isCurrency = true;
+                    if(!isset($btcpayCurrencies['result']['error']) && count($btcpayCurrencies['result']['currencies'])>0){
+                        if(!isset($btcpayCurrencies['result']['currencies']['BTC_'.$currency])){
+                            $isCurrency = false;
+                        }
+                    }
+                    else {
+                        $isCurrency = false;
+                    }
+                    
+                    // Handle currencies non-supported by BTCPay Server, we need to change them BTC and adjust the amount.
+                    if( !$isCurrency ){
+                        $currency = 'BTC';
+                        $rate = 1/$checkInvoice['rate'];
+                        $amountBTC = bcdiv(strval($amount), strval($rate), 8);
+                        $amount = (float)$amountBTC;
+                    }
+                }
 
-		$camount = \Coinsnap\Util\PreciseNumber::parseFloat($amount,2);
+		$camount = ($currency === 'BTC')? \Coinsnap\Util\PreciseNumber::parseFloat($amount,8) : \Coinsnap\Util\PreciseNumber::parseFloat($amount,2);
+                
 		$invoice = $client->createInvoice(
                     self::getStoreId(),  
-                    $pmpro_currency,
+                    $currency,
                     $camount,
                     $order->id,
                     $buyerEmail,
@@ -647,12 +677,12 @@ use Coinsnap\Client\Webhook;
                 if($checkInvoice['error'] === 'currencyError'){
                             $errorMessage = sprintf( 
                             /* translators: 1: Currency */
-                            __( 'Currency %1$s is not supported by Coinsnap', 'coinsnap-for-paid-memberships-pro' ), strtoupper( $pmpro_currency ));
+                            __( 'Currency %1$s is not supported by Coinsnap', 'coinsnap-for-paid-memberships-pro' ), $currency);
                 }      
                 elseif($checkInvoice['error'] === 'amountError'){
                             $errorMessage = sprintf( 
                             /* translators: 1: Amount, 2: Currency */
-                            __( 'Invoice amount cannot be less than %1$s %2$s', 'coinsnap-for-paid-memberships-pro' ), $checkInvoice['min_value'], strtoupper( $pmpro_currency ));
+                            __( 'Invoice amount cannot be less than %1$s %2$s', 'coinsnap-for-paid-memberships-pro' ), $checkInvoice['min_value'], $currency);
                 }
                 else {
                     $errorMessage = $checkInvoice['error'];

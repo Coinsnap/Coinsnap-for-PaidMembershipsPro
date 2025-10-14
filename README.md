@@ -7,7 +7,7 @@
 * Tags: Lightning, Lightning Payment, SATS, Satoshi sats, bitcoin, Wordpress, Paid Memberships Pro, paywall, payment gateway, accept bitcoin, bitcoin plugin, bitcoin payment processor, bitcoin e-commerce, Lightning Network, cryptocurrency, lightning payment processor
 * Requires PHP: 7.4
 * Tested up to: 6.8
-* Stable tag: 1.0.0
+* Stable tag: 1.0.1
 * License: GPL2
 * License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -199,4 +199,8 @@ The Bitcoin + Lightning payment page is now displayed, offering the payer the op
 
 ## Changelog 
 #### 1.0.0 :: 2025-10-09
-* Initial release in Wordpress Plugin Directory. 
+* Initial release in Wordpress Plugin Directory.
+
+#### 1.0.1 :: 2025-10-13
+* Update: Added non-supported by BTCPay server currencies handler on invoice request flow.
+* Update: Added custom redirect after payment page in module settings.
