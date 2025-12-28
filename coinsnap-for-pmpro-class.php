@@ -65,6 +65,7 @@ use Coinsnap\Client\Webhook;
                 $messageAbort = __('Error on verifying redirected API Key with stored BTCPay Server url. Aborting API wizard. Please try again or continue with manual setup.', 'coinsnap-for-paid-memberships-pro');
                 $notice->addNotice('error', $messageAbort);
                 wp_redirect($CoinsnapBTCPaySettingsUrl);
+                exit();
             }
 
             // Data does get submitted with url-encoded payload, so parse $_POST here.
@@ -671,6 +672,7 @@ use Coinsnap\Client\Webhook;
 		
     		if($payurl = $invoice->getData()['checkoutLink']){
                     wp_redirect($payurl);
+                    exit();
                 }
             }
             else {

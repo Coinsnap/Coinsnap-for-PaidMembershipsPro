@@ -2,7 +2,7 @@
 /*
  * Plugin Name:     Bitcoin payment for Paid Memberships Pro
  * Description:     With this Bitcoin payment plugin for Paid Memberships Pro you can now charge for your memberships in Bitcoin!
- * Version:         1.0.2
+ * Version:         1.0.3
  * Author:          Coinsnap
  * Author URI:      https://coinsnap.io/
  * Text Domain:     coinsnap-for-paid-memberships-pro
@@ -10,7 +10,7 @@
  * Requires PHP:    7.4
  * Tested up to:    6.9
  * Requires at least: 5.2
- * PMPro tested up to: 3.6.2
+ * PMPro tested up to: 3.6.3
  * License:         GPL2
  * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
  *
@@ -19,7 +19,7 @@
 
 if (!defined( 'ABSPATH' )){ exit;}
 if(!defined('COINSNAPPMPRO_PLUGIN_PHP_VERSION')){define( 'COINSNAPPMPRO_PLUGIN_PHP_VERSION', '7.4' );}
-if(!defined('COINSNAPPMPRO_PLUGIN_VERSION')){define( 'COINSNAPPMPRO_PLUGIN_VERSION', '1.0.2' );}
+if(!defined('COINSNAPPMPRO_PLUGIN_VERSION')){define( 'COINSNAPPMPRO_PLUGIN_VERSION', '1.0.3' );}
 if(!defined('COINSNAPPMPRO_REFERRAL_CODE')){define( 'COINSNAPPMPRO_REFERRAL_CODE', 'D12876' );}
 if(!defined('COINSNAP_SERVER_URL')){define( 'COINSNAP_SERVER_URL', 'https://app.coinsnap.io' );}
 if(!defined('COINSNAP_API_PATH')){define( 'COINSNAP_API_PATH', '/api/v1/');}
