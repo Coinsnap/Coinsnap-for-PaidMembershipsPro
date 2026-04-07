@@ -6,7 +6,7 @@
 * Contributors: coinsnap
 * Tags: Lightning, Lightning Payment, SATS, Satoshi sats, bitcoin, Wordpress, Paid Memberships Pro, paywall, payment gateway, accept bitcoin, bitcoin plugin, bitcoin payment processor, bitcoin e-commerce, Lightning Network, cryptocurrency, lightning payment processor
 * Tested up to: 6.9
-* Stable tag: 1.0.4
+* Stable tag: 1.0.5
 * License: GPL2
 * License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -215,3 +215,9 @@ The Bitcoin + Lightning payment page is now displayed, offering the payer the op
 #### 1.0.4 :: 2026-03-07
 * Compatibility with Paid Memberships Pro 3.6.4 - 3.6.5 is tested.
 * Updated plugin description.
+
+#### 1.0.5 :: 2026-04-07
+* Updated \Coinsnap\Client\Invoice class.
+* Updated \Coinsnap\Client\Store class.
+* Compatibility with Paid Memberships Pro 3.7.1 is tested.
+* Compatibility with Wordpress 6.9.4 is tested.
