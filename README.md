@@ -5,15 +5,16 @@
 
 * Contributors: coinsnap
 * Tags: Lightning, Lightning Payment, SATS, Satoshi sats, bitcoin, Wordpress, Paid Memberships Pro, paywall, payment gateway, accept bitcoin, bitcoin plugin, bitcoin payment processor, bitcoin e-commerce, Lightning Network, cryptocurrency, lightning payment processor
-* Tested up to: 6.9
-* Stable tag: 1.0.5
+* Tested up to: 7.0
+* Stable tag: 1.0.6
 * License: GPL2
 * License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 With this Bitcoin payment plugin for Paid Memberships Pro you can now charge for your memberships in Bitcoin!
 
-* Paid Memberships Pro Demo Donation Page: [https://paidmembershippro.coinsnap.org/](https://paidmembershippro.coinsnap.org/)
-* Blog Article: [https://coinsnap.io/modules/paid-memberships-pro/](https://coinsnap.io/modules/paid-memberships-pro/)
+* Paid Memberships Pro Demo Page: [https://paidmembershippro.coinsnap.org/](https://paidmembershippro.coinsnap.org/)
+* Blog Article: [https://coinsnap.io/wp-add-ons/paid-memberships-pro/](https://coinsnap.io/wp-add-ons/paid-memberships-pro/)
+* Installation Guide: [https://coinsnap.io/user-guides/paid-memberships-pro-bitcoin-user-guide/](https://coinsnap.io/user-guides/paid-memberships-pro-bitcoin-user-guide/)
 * WordPress: [https://wordpress.org/plugins/coinsnap-for-paid-memberships-pro/](https://wordpress.org/plugins/coinsnap-for-paid-memberships-pro/)
 * GitHub: [https://github.com/Coinsnap/Coinsnap-for-PaidMembershipsPro](https://github.com/Coinsnap/Coinsnap-for-PaidMembershipsPro)
 
@@ -33,7 +34,7 @@ If you sell restricted content and manage membership subscriptions with recurrin
 
 With the Coinsnap Bitcoin Lightning payment processing plugin you can immediately accept Bitcoin Lightning payments on your site. You don’t need your own Lightning node or any other technical requirements - just install the Coinsnap for Paid Memberships Pro plugin.
 
-Simply register on [Coinsnap](https://app.coinsnap.io/register), enter your own Lightning address and install the Coinsnap payment module in your wordpress backend. Add your store ID and your API key which you’ll find in your Coinsnap account, and your customers can pay you with Bitcoin Lightning right away!
+Simply register on [Coinsnap](https://app.coinsnap.io/), enter your own Lightning address and install the Coinsnap payment module in your wordpress backend. Add your store ID and your API key which you’ll find in your Coinsnap account, and your customers can pay you with Bitcoin Lightning right away!
 
 * Features: *
 
@@ -78,7 +79,7 @@ Simply register on [Coinsnap](https://app.coinsnap.io/register), enter your own 
 
 * [Coinsnap API (1.0) documentation](https://docs.coinsnap.io/)
 * [Frequently Asked Questions](https://coinsnap.io/help/coinsnap-faq/) 
-* [Terms and Conditions](https://coinsnap.io/info/general-terms-and-conditions/)
+* [Terms of Service](https://coinsnap.io/info/terms-of-service/)
 * [Privacy Policy](https://coinsnap.io/info/privacy-policy/)
 
 
@@ -147,7 +148,7 @@ If you don’t have a Coinsnap account yet, you can do so via the link shown: Co
 
 ### 2.1. Create a Coinsnap Account ####
 
-Now go to the Coinsnap website at: https://app.coinsnap.io/register and open an account by entering your email address and a password of your choice.
+Now go to the Coinsnap website at: [https://app.coinsnap.io/](https://app.coinsnap.io/) and open an account by entering your email address and a password of your choice.
 
 If you are using a Lightning Wallet with Lightning Login, then you can also open a Coinsnap account with it.
 
@@ -172,7 +173,7 @@ A Lightning address is similar to an e-mail address. Lightning payments are forw
 ![Connect website with Coinsnap](https://resources.coinsnap.org/products/paidmembershipspro/images/10.png)
 
 For more information on Lightning addresses and the corresponding Lightning wallet providers, click here:
-https://coinsnap.io/lightning-wallet-mit-lightning-adresse/
+[https://coinsnap.io/blog/how-do-i-get-a-lightning-wallet/](https://coinsnap.io/blog/how-do-i-get-a-lightning-wallet/)
 
 ### 3. Connect Coinsnap account with PaidMembershipsPro plug-in ###
 
@@ -221,3 +222,7 @@ The Bitcoin + Lightning payment page is now displayed, offering the payer the op
 * Updated \Coinsnap\Client\Store class.
 * Compatibility with Paid Memberships Pro 3.7.1 is tested.
 * Compatibility with Wordpress 6.9.4 is tested.
+
+#### 1.0.6 :: 2026-05-24
+* Compatibility with Paid Memberships Pro 3.7.3 is tested.
+* Compatibility with Wordpress 7.0 is tested.
