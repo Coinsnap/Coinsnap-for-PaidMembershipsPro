@@ -150,6 +150,10 @@ use Coinsnap\Client\Webhook;
         public static function coinsnapConnectionHandler(){
             global $pmpro_currency;
             $_nonce = filter_input(INPUT_POST,'_wpnonce',FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            // Before any API call: it can re-register the webhook and replace its secret.
+            if (!wp_verify_nonce((string) $_nonce, 'coinsnappmpro-ajax-nonce') || !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Not allowed'], 403);
+            }
 
             if(empty(self::getApiUrl()) || empty(self::getApiKey())){
                 $response = [
