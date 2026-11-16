@@ -530,7 +530,8 @@ use Coinsnap\Client\Webhook;
         function process(&$order){
             
             global $pmpro_currency;	
-            $amount = round($order->subtotal, 2);
+            // The total includes tax; the subtotal left tax unpaid.
+            $amount = round((float) ( ( isset( $order->total ) && '' !== (string) $order->total ) ? $order->total : $order->subtotal ), 2);
             
             $checkInvoice = self::coinsnappmpro_amount_validation($amount,strtoupper($pmpro_currency));
                 
@@ -624,7 +625,8 @@ use Coinsnap\Client\Webhook;
             global $pmpro_currency;
             
             $currency = strtoupper($pmpro_currency);
-            $amount = round($order->subtotal, 2);
+            // The total includes tax; the subtotal left tax unpaid.
+            $amount = round((float) ( ( isset( $order->total ) && '' !== (string) $order->total ) ? $order->total : $order->subtotal ), 2);
             
             $client =new \Coinsnap\Client\Invoice(self::getApiUrl(), self::getApiKey());
             $checkInvoice = self::coinsnappmpro_amount_validation($amount,strtoupper($currency));

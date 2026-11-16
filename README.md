@@ -228,6 +228,7 @@ Coinsnap charges a 1% transaction fee.
 - Security: The BTCPay Server setup callback only accepts a one-time code issued by the settings page, and the server URL is saved only together with a verified key. Before, anyone could post an API key and switch the site to their own BTCPay store.
 - Security: The API key fields no longer show the saved key; leave them empty to keep it. A BTCPay key is not kept when the server URL changes.
 - Security: The library no longer sends an Access-Control-Allow-Origin: * header, and API error replies are no longer copied into error messages.
+- Fix: Invoices are created for the order total, tax included. Before, they were created for the subtotal, so tax was never collected.
 - Fix: Orders waiting for payment are saved as "token" instead of "success".
 - Fix: Checkout with a discount code no longer calls an undefined function (now()).
 - Fix: The checkout step no longer runs for other gateways' checkouts.
