@@ -220,6 +220,19 @@ Coinsnap charges a 1% transaction fee.
 
 ## Changelog
 
+### 1.1.0 (2026-11-16)
+- Security: Webhooks are verified with the timestamped X-Coinsnap-Signature header (Coinsnap) or BTCPay-Sig (BTCPay Server), with a timing-safe comparison. A missing webhook secret rejects every webhook.
+- Security: A membership is granted only when the invoice is settled, was created by this plugin for that order, and matches the amount and currency it asked for; and only once per order. Before, any invoice in the store with a matching order ID changed the order, and every repeated webhook granted the membership again.
+- Security: "Processing" no longer grants the membership (it defaulted to success). Paid and refunded orders are never changed by a later webhook. BTCPay invoices marked settled by hand are not accepted.
+- Security: If the invoice cannot be created at checkout, the checkout stops with an error. Before, an error at this step could let Paid Memberships Pro grant the membership without a payment.
+- Security: The BTCPay Server setup callback only accepts a one-time code issued by the settings page, and the server URL is saved only together with a verified key. Before, anyone could post an API key and switch the site to their own BTCPay store.
+- Security: The API key fields no longer show the saved key; leave them empty to keep it. A BTCPay key is not kept when the server URL changes.
+- Security: The library no longer sends an Access-Control-Allow-Origin: * header, and API error replies are no longer copied into error messages.
+- Fix: Orders waiting for payment are saved as "token" instead of "success".
+- Fix: Checkout with a discount code no longer calls an undefined function (now()).
+- Fix: The checkout step no longer runs for other gateways' checkouts.
+- Fix: A payment server outage no longer deletes and re-registers the webhook. The exchange rate lookup gives up after 3 tries instead of retrying forever.
+
 ### 1.0.6 — 2026-05-24
 - Compatibility with Paid Memberships Pro 3.7.3 tested.
 - Compatibility with WordPress 7.0 tested.

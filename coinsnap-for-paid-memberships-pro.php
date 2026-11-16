@@ -3,7 +3,7 @@
  * Plugin Name:     Bitcoin payment for Paid Memberships Pro
  * Plugin URI:      https://coinsnap.io/wp-add-ons/paid-memberships-pro/
  * Description:     With this Bitcoin payment plugin for Paid Memberships Pro you can now charge for your memberships in Bitcoin!
- * Version:         1.0.5
+ * Version:         1.1.0
  * Author:          Coinsnap
  * Author URI:      https://coinsnap.io/
  * Text Domain:     coinsnap-for-paid-memberships-pro
@@ -20,7 +20,7 @@
 
 if (!defined( 'ABSPATH' )){ exit;}
 if(!defined('COINSNAPPMPRO_PLUGIN_PHP_VERSION')){define( 'COINSNAPPMPRO_PLUGIN_PHP_VERSION', '7.4' );}
-if(!defined('COINSNAPPMPRO_PLUGIN_VERSION')){define( 'COINSNAPPMPRO_PLUGIN_VERSION', '1.0.5' );}
+if(!defined('COINSNAPPMPRO_PLUGIN_VERSION')){define( 'COINSNAPPMPRO_PLUGIN_VERSION', '1.1.0' );}
 if(!defined('COINSNAPPMPRO_REFERRAL_CODE')){define( 'COINSNAPPMPRO_REFERRAL_CODE', 'D12876' );}
 if(!defined('COINSNAP_SERVER_URL')){define( 'COINSNAP_SERVER_URL', 'https://app.coinsnap.io' );}
 if(!defined('COINSNAP_API_PATH')){define( 'COINSNAP_API_PATH', '/api/v1/');}
@@ -32,6 +32,9 @@ if (!function_exists('is_plugin_active')) {
 }
 
 require_once(dirname(__FILE__) . "/library/loader.php");
+require_once(dirname(__FILE__) . "/includes/Signature.php");
+require_once(dirname(__FILE__) . "/includes/InvoiceDecision.php");
+require_once(dirname(__FILE__) . "/includes/WebhookHandler.php");
 
 function coinsnappmpro_dependency_check(){
     if (!is_plugin_active('paid-memberships-pro/paid-memberships-pro.php')) {
@@ -65,7 +68,6 @@ add_action('init', function() {
 add_filter('request', function($vars) {
     if (isset($vars['coinsnap-for-paid-memberships-pro-btcpay-settings-callback'])) {
         $vars['coinsnap-for-paid-memberships-pro-btcpay-settings-callback'] = true;
-        $vars['coinsnap-for-pmpro-btcpay-nonce'] = wp_create_nonce('coinsnappmpro-btcpay-nonce');
     }
     return $vars;
 });

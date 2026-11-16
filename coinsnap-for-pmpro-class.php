@@ -9,6 +9,7 @@ use Coinsnap\Client\Webhook;
 		
         public const COINSNAP_WEBHOOK_EVENTS = ['New','Expired','Settled','Processing','Invalid'];
         public const BTCPAY_WEBHOOK_EVENTS = ['InvoiceCreated','InvoiceExpired','InvoiceSettled','InvoiceProcessing','InvoiceInvalid'];
+        private static $btcpayUrlChanged = false;
 			
 	public function __construct($gateway = null){
             $this->gateway = $gateway;
@@ -34,6 +35,9 @@ use Coinsnap\Client\Webhook;
                     add_action('admin_enqueue_scripts', ['PMProGateway_coinsnap', 'enqueueAdminScripts'] );
                     add_action('wp_ajax_coinsnap_connection_handler', ['PMProGateway_coinsnap', 'coinsnapConnectionHandler'] );
                     add_action('wp_ajax_pmpro_btcpay_server_apiurl_handler', ['PMProGateway_coinsnap', 'btcpayApiUrlHandler']);
+                    add_filter('pre_update_option_pmpro_btcpay_server_url', ['PMProGateway_coinsnap', 'noteBtcpayUrlChange'], 10, 2);
+                    add_filter('pre_update_option_pmpro_coinsnap_api_key', ['PMProGateway_coinsnap', 'keepStoredApiKey'], 10, 3);
+                    add_filter('pre_update_option_pmpro_btcpay_api_key', ['PMProGateway_coinsnap', 'keepStoredApiKey'], 10, 3);
             }
             
             
@@ -49,43 +53,45 @@ use Coinsnap\Client\Webhook;
                 return;
             }
             
-            if(!isset($wp_query->query_vars['coinsnap-for-pmpro-btcpay-nonce']) || !wp_verify_nonce($wp_query->query_vars['coinsnap-for-pmpro-btcpay-nonce'],'coinsnappmpro-btcpay-nonce')){
-                return;
-            }
-
             $CoinsnapBTCPaySettingsUrl = admin_url('admin.php?page=pmpro-paymentsettings&edit_gateway=coinsnap');
 
-            $rawData = file_get_contents('php://input');
+            // BTCPay posts here from the admin's browser; only the state handed out by btcpayApiUrlHandler() is accepted, once.
+            $state = isset($_GET['state']) ? preg_replace('/[^A-Za-z0-9]/', '', (string) wp_unslash($_GET['state'])) : '';
+            $stateHost = ($state !== '') ? get_transient('coinsnappmpro_btcpay_state_' . $state) : false;
+            if ($state !== '') {
+                delete_transient('coinsnappmpro_btcpay_state_' . $state);
+            }
+            $btcpay_server_url = is_string($stateHost) ? $stateHost : '';
+            if ($btcpay_server_url === '') {
+                status_header(403);
+                exit();
+            }
 
-            $btcpay_server_url = pmpro_getOption( 'btcpay_server_url');
-            $btcpay_api_key  = filter_input(INPUT_POST,'apiKey',FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $data = [];
+            $data['apiKey'] = isset($_POST['apiKey']) ? sanitize_text_field(wp_unslash($_POST['apiKey'])) : null;
+            if (isset($_POST['permissions']) && is_array($_POST['permissions'])) {
+                foreach (array_map('sanitize_text_field', wp_unslash($_POST['permissions'])) as $key => $value) {
+                    $data['permissions'][$key] = $value;
+                }
+            }
 
-            $client = new \Coinsnap\Client\Store($btcpay_server_url,$btcpay_api_key);
-            if (count($client->getStores()) < 1) {
-                $messageAbort = __('Error on verifying redirected API Key with stored BTCPay Server url. Aborting API wizard. Please try again or continue with manual setup.', 'coinsnap-for-paid-memberships-pro');
-                $notice->addNotice('error', $messageAbort);
+            try {
+                $keyWorks = !empty($data['apiKey']) && count((new \Coinsnap\Client\Store($btcpay_server_url, $data['apiKey']))->getStores()) > 0;
+            } catch (\Throwable $e) {
+                $keyWorks = false;
+            }
+            if (!$keyWorks) {
+                $notice->addNotice('error', __('Error on verifying redirected API Key with stored BTCPay Server url. Aborting API wizard. Please try again or continue with manual setup.', 'coinsnap-for-paid-memberships-pro'));
                 wp_redirect($CoinsnapBTCPaySettingsUrl);
                 exit();
             }
 
-            // Data does get submitted with url-encoded payload, so parse $_POST here.
-            if (!empty($_POST) || wp_verify_nonce(filter_input(INPUT_POST,'wp_nonce',FILTER_SANITIZE_FULL_SPECIAL_CHARS),'-1')) {
-                $data['apiKey'] = filter_input(INPUT_POST,'apiKey',FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?? null;
-                if(isset($_POST['permissions'])){
-                    $permissions = array_map('sanitize_text_field', wp_unslash($_POST['permissions']));
-                    if(is_array($permissions)){
-                        foreach ($permissions as $key => $value) {
-                            $data['permissions'][$key] = sanitize_text_field($permissions[$key] ?? null);
-                        }
-                    }
-                }
-            }
-    
             if (isset($data['apiKey']) && isset($data['permissions'])) {
 
                 $apiData = new \Coinsnap\Client\BTCPayApiAuthorization($data);
                 if ($apiData->hasSingleStore() && $apiData->hasRequiredPermissions()) {
 
+                    pmpro_setOption( "btcpay_server_url", $btcpay_server_url);
                     pmpro_setOption( "btcpay_api_key", $apiData->getApiKey());
                     pmpro_setOption( "btcpay_store_id", $apiData->getStoreID());
                     pmpro_setOption( "coinsnap_provider", 'btcpay');
@@ -143,7 +149,7 @@ use Coinsnap\Client\Webhook;
         
         public static function coinsnapConnectionHandler(){
             global $pmpro_currency;
-            $_nonce = filter_input(INPUT_POST,'_wpnonce',FILTER_SANITIZE_STRING);
+            $_nonce = filter_input(INPUT_POST,'_wpnonce',FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             if(empty(self::getApiUrl()) || empty(self::getApiKey())){
                 $response = [
@@ -237,13 +243,13 @@ use Coinsnap\Client\Webhook;
          * Handles the BTCPay server AJAX callback from the settings form.
          */
         static function btcpayApiUrlHandler() {
-            $_nonce = filter_input(INPUT_POST,'apiNonce',FILTER_SANITIZE_STRING);
+            $_nonce = filter_input(INPUT_POST,'apiNonce',FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             if ( !wp_verify_nonce( $_nonce, 'coinsnappmpro-ajax-nonce' ) ) {
                 wp_die('Unauthorized!', '', ['response' => 401]);
             }
 
             if ( current_user_can( 'manage_options' ) ) {
-                $host = filter_var(filter_input(INPUT_POST,'host',FILTER_SANITIZE_STRING), FILTER_VALIDATE_URL);
+                $host = filter_var(trim((string) filter_input(INPUT_POST,'host',FILTER_UNSAFE_RAW)), FILTER_VALIDATE_URL);
 
                 if ($host === false || (substr( $host, 0, 7 ) !== "http://" && substr( $host, 0, 8 ) !== "https://")) {
                     wp_send_json_error("Error validating BTCPayServer URL.");
@@ -260,6 +266,9 @@ use Coinsnap\Client\Webhook;
                     'btcpay.store.webhooks.canmodifywebhooks',
                 ]);
 
+                $state = wp_generate_password(32, false);
+                set_transient('coinsnappmpro_btcpay_state_' . $state, $host, 15 * MINUTE_IN_SECONDS);
+
                 try {
                     // Create the redirect url to BTCPay instance.
                     $url = \Coinsnap\Client\BTCPayApiKey::getAuthorizeUrl(
@@ -268,19 +277,18 @@ use Coinsnap\Client\Webhook;
                         'PMPro',
                         true,
                         true,
-                        home_url('?coinsnap-for-paid-memberships-pro-btcpay-settings-callback'),
+                        add_query_arg('state', $state, home_url('?coinsnap-for-paid-memberships-pro-btcpay-settings-callback')),
                         null
                     );
 
-                    // Store the host to options before we leave the site.
-                    pmpro_setOption('btcpay_server_url',$host);
+                    // The host is saved only by the callback, once a key for it is verified; the stored key never goes to an unverified host.
 
                     // Return the redirect url.
                     wp_send_json_success(['url' => $url]);
                 }
 
                 catch (\Throwable $e) {
-
+                    wp_send_json_error("Error processing Ajax request.");
                 }
             }
             wp_send_json_error("Error processing Ajax request.");
@@ -337,14 +345,13 @@ use Coinsnap\Client\Webhook;
                             }
                             else {
                                 echo '<div class="notice notice-error"><p>';
-                                esc_html_e('PMPro: Coinsnap connection error:', 'coinsnap-for-paid-memberships-pro');
-                                echo esc_html($store['result']['message']);
+                                esc_html_e('PMPro: Coinsnap connection error. Check the Store ID and API key.', 'coinsnap-for-paid-memberships-pro');
                                 echo '</p></div>';
                             }
                         }
-                        catch (\Exception $e) {
+                        catch (\Throwable $e) {
                             echo '<div class="notice notice-error"><p>';
-                            esc_html_e('PMPro: Coinsnap connection error:', 'coinsnap-for-paid-memberships-pro');
+                            esc_html_e('PMPro: Coinsnap connection error. Check the Store ID and API key.', 'coinsnap-for-paid-memberships-pro');
                             echo '</p></div>';
                         }
                     }
@@ -419,7 +426,7 @@ use Coinsnap\Client\Webhook;
 
             $coinsnap_expired_status = !empty($values['coinsnap_expired_status']) ? $values['coinsnap_expired_status'] : 'cancelled';
             $coinsnap_settled_status = !empty($values['coinsnap_settled_status']) ? $values['coinsnap_settled_status'] : 'success';				
-            $coinsnap_processing_status = !empty($values['coinsnap_processing_status']) ? $values['coinsnap_processing_status'] : 'success';
+            $coinsnap_processing_status = !empty($values['coinsnap_processing_status']) ? $values['coinsnap_processing_status'] : 'pending';
             
             ?>
 
@@ -441,7 +448,7 @@ use Coinsnap\Client\Webhook;
             </tr>
             <tr class="gateway gateway_coinsnap">
                 <th scope="row" valign="top"><label for="coinsnap_api_key"><?php esc_html_e('API Key*', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
-                <td><input type="text" id="coinsnap_api_key" name="coinsnap_api_key" value="<?php echo esc_attr($values['coinsnap_api_key'])?>" class="regular-text code" /></td>
+                <td><?php self::renderApiKeyField('coinsnap_api_key', (string) $values['coinsnap_api_key']); ?></td>
             </tr>
             <tr class="gateway gateway_coinsnap">
                 <th scope="row" valign="top"><label for="coinsnap_button_text"><?php esc_html_e('Button text', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
@@ -459,7 +466,7 @@ use Coinsnap\Client\Webhook;
             </tr>
             <tr class="gateway gateway_btcpay">
                 <th scope="row" valign="top"><label for="btcpay_api_key"><?php esc_html_e('API Key*', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
-                <td><input type="text" id="btcpay_api_key" name="btcpay_api_key" value="<?php echo esc_attr($values['btcpay_api_key'])?>" class="regular-text code" /></td>
+                <td><?php self::renderApiKeyField('btcpay_api_key', (string) $values['btcpay_api_key']); ?></td>
             </tr>
             <tr class="gateway gateway_btcpay">
                 <th scope="row" valign="top"><label for="btcpay_button_text"><?php esc_html_e('Button text', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
@@ -591,17 +598,26 @@ use Coinsnap\Client\Webhook;
         }
 
         static function coinsnappmpro_checkout_before_change_membership_level($user_id, $morder){
-            global $wpdb, $discount_code_id, $pmpro_currency;
-                                
-            if(empty($morder)){return;}
-            $morder->user_id = $user_id;				
-            $morder->saveOrder();
-					
-            if(!empty($discount_code_id)){
-                $wpdb->insert($wpdb->pmpro_discount_codes_uses, ['code_id' => $discount_code_id, 'user_id' => $user_id, 'order_id' => $morder->id, 'timestamp' => now()], ['%s', '%s', '%s', '%s']);
+            global $wpdb, $discount_code_id;
+
+            // This action runs for every gateway's checkout.
+            if (empty($morder) || $morder->gateway !== 'coinsnap') {
+                return;
             }
-							
-            $morder->Gateway->coinsnappmpro_getInvoice($morder);
+            $morder->user_id = $user_id;
+            // Waiting for payment; the webhook marks it paid and grants the membership.
+            $morder->status = 'token';
+            $morder->saveOrder();
+
+            if(!empty($discount_code_id)){
+                $wpdb->insert($wpdb->pmpro_discount_codes_uses, ['code_id' => $discount_code_id, 'user_id' => $user_id, 'order_id' => $morder->id, 'timestamp' => current_time('mysql')], ['%s', '%s', '%s', '%s']);
+            }
+
+            $error = $morder->Gateway->coinsnappmpro_getInvoice($morder);
+            // Returning would let PMPro grant the membership without a payment.
+            $morder->status = 'error';
+            $morder->saveOrder();
+            wp_die(esc_html($error), esc_html__('Payment error', 'coinsnap-for-paid-memberships-pro'), ['response' => 503, 'back_link' => true]);
 	}
         
         public function coinsnappmpro_getInvoice($order){
@@ -656,24 +672,36 @@ use Coinsnap\Client\Webhook;
 
 		$camount = ($currency === 'BTC')? \Coinsnap\Util\PreciseNumber::parseFloat($amount,8) : \Coinsnap\Util\PreciseNumber::parseFloat($amount,2);
                 
-		$invoice = $client->createInvoice(
-                    self::getStoreId(),  
-                    $currency,
-                    $camount,
-                    $order->id,
-                    $buyerEmail,
-                    $buyerName, 
-                    $redirectUrl,
-                    COINSNAPPMPRO_REFERRAL_CODE,     
-                    $metadata,
-                    $redirectAutomatically,
-                    $walletMessage
-		);
-		
-    		if($payurl = $invoice->getData()['checkoutLink']){
-                    wp_redirect($payurl);
-                    exit();
+                try {
+                    $invoiceData = $client->createInvoice(
+                        self::getStoreId(),
+                        $currency,
+                        $camount,
+                        $order->id,
+                        $buyerEmail,
+                        $buyerName,
+                        $redirectUrl,
+                        COINSNAPPMPRO_REFERRAL_CODE,
+                        $metadata,
+                        $redirectAutomatically,
+                        $walletMessage
+                    )->getData();
+                } catch (\Throwable $e) {
+                    $invoiceData = [];
                 }
+
+                if (empty($invoiceData['checkoutLink']) || empty($invoiceData['id'])) {
+                    return __('The payment could not be started. Please try again later.', 'coinsnap-for-paid-memberships-pro');
+                }
+
+                // Only invoices recorded on the order can pay it, and only for the amount and currency sent.
+                $invoices = get_pmpro_membership_order_meta($order->id, 'coinsnap_invoices', true);
+                $invoices = is_array($invoices) ? $invoices : [];
+                $invoices[(string) $invoiceData['id']] = ['amount' => (string) $camount, 'currency' => $currency];
+                update_pmpro_membership_order_meta($order->id, 'coinsnap_invoices', $invoices);
+
+                wp_redirect($invoiceData['checkoutLink']);
+                exit();
             }
             else {
                 if($checkInvoice['error'] === 'currencyError'){
@@ -689,10 +717,8 @@ use Coinsnap\Client\Webhook;
                 else {
                     $errorMessage = $checkInvoice['error'];
                 }
-                $order->error = esc_html($errorMessage);
-                return false;
+                return (string) $errorMessage;
             }
-            exit;
         }
         
         //  =============================== API OPTIONS =======================================
@@ -725,207 +751,107 @@ use Coinsnap\Client\Webhook;
         
         
         public static function coinsnappmpro_processWebhook(){
-			
-            if ( null === ( filter_input(INPUT_GET,'pmp-listener') ) || filter_input(INPUT_GET,'pmp-listener') !== 'coinsnap' ) {
+            if (filter_input(INPUT_GET, 'pmp-listener', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== 'coinsnap') {
                 return;
             }
-            
-            try {
-                // First check if we have any input
-                $rawPostData = file_get_contents("php://input");
-                if (!$rawPostData) {
-                        wp_die('No raw post data received', '', ['response' => 400]);
-                }
+            $provider = self::get_payment_provider();
+            $webhook = get_option('pmpro_coinsnap_webhook');
+            $secret = is_array($webhook) ? (string) ($webhook['secret'] ?? '') : '';
+            $header = ($provider === 'btcpay') ? 'HTTP_BTCPAY_SIG' : 'HTTP_X_COINSNAP_SIGNATURE';
+            $statuses = [
+                'settled' => (string) pmpro_getOption('coinsnap_settled_status'),
+                'processing' => (string) pmpro_getOption('coinsnap_processing_status'),
+                'expired' => (string) pmpro_getOption('coinsnap_expired_status'),
+            ];
 
-                // Get headers and check for signature
-                $headers = getallheaders();
-                $signature = null; $payloadKey = null;
-                $_provider = self::get_payment_provider();
-
-                foreach ($headers as $key => $value) {
-                    if (strtolower($key) === 'x-coinsnap-sig' || strtolower($key) === 'btcpay-sig') {
-                            $signature = $value;
-                            $payloadKey = strtolower($key);
-                    }
-                }
-
-                // Handle missing or invalid signature
-                if (null === $signature) {
-                    wp_die('Authentication required', '', ['response' => 401]);
-                }
-
-                // Validate the signature
-                $webhook = get_option( 'pmpro_coinsnap_webhook');
-                if (!Webhook::isIncomingWebhookRequestValid($rawPostData, $signature, $webhook['secret'])) {
-                    wp_die('Invalid authentication signature', '', ['response' => 401]);
-                }
-                
-                try {
-
-                    // Parse the JSON payload
-                    $postData = json_decode($rawPostData, false, 512, JSON_THROW_ON_ERROR);
-
-                    if (null === sanitize_text_field($postData->invoiceId)) {
-                        wp_die('No Coinsnap invoiceId provided', '', ['response' => 400]);
-                    }
-
-                    if(strpos(sanitize_text_field($postData->invoiceId),'test_') !== false){
-                        wp_die('Successful webhook test', '', ['response' => 200]);
-                    }
-
-                    $invoice_id = sanitize_text_field($postData->invoiceId);
-
-                    $client = new \Coinsnap\Client\Invoice( self::getApiUrl(), self::getApiKey() );			
-                    $invoice = $client->getInvoice(self::getStoreId(), $invoice_id);
-                    $status = $invoice->getData()['status'] ;
-                    $order_id = (self::get_payment_provider() === 'btcpay')? $invoice->getData()['metadata']['orderId'] : $invoice->getData()['orderId'];
-
-                    $order_status = 'pending';
-                    
-                    switch($status){
-                        case 'Expired':
-                        case 'InvoiceExpired':
-                            $order_status = pmpro_getOption('coinsnap_expired_status');
-                            break;
-                        case 'Processing':
-                        case 'InvoiceProcessing':
-                            $order_status = pmpro_getOption('coinsnap_processing_status');
-                            break;
-                        case 'Settled':
-                        case 'InvoiceSettled':
-                            $order_status = pmpro_getOption('coinsnap_settled_status');
-                            break;
-                        default: break;
-                    }
-
-                    if (null !== $order_id){
-                        $morder = new MemberOrder();
-                        $morder->getMemberOrderByID( $order_id );
-                        $morder->getMembershipLevel();					
-                        $morder->status = $order_status;	
-                        $morder->saveOrder();
-
-                        if ($order_status === 'success'){
-
-                            // Get discount code.
-                            $morder->getDiscountCode();
-                            if ( ! empty( $morder->discount_code ) ) {
-
-                                // Update membership level
-                                $morder->getMembershipLevel(true);
-                                $discount_code_id = $morder->discount_code->id;
-                            }
-                            else {
-                                $discount_code_id = "";
-                            }
-
-                            $morder->membership_level = apply_filters("pmpro_inshandler_level", $morder->membership_level, $morder->user_id);		
-                            $startdate = apply_filters("pmpro_checkout_start_date", "'" . current_time('mysql') . "'", $morder->user_id, $morder->membership_level);
-
-                            //fix expiration date
-                            if(!empty($morder->membership_level->expiration_number)){
-                                $enddate = "'" . date_i18n("Y-m-d", strtotime("+ " . $morder->membership_level->expiration_number . " " . $morder->membership_level->expiration_period, current_time("timestamp"))) . "'";
-                            }
-                            else {
-                                $enddate = "NULL";
-                            }
-
-                            //filter the enddate (documented in preheaders/checkout.php)
-                            $enddate = apply_filters("pmpro_checkout_end_date", $enddate, $morder->user_id, $morder->membership_level, $startdate);
-
-                            if($morder->user_id !== null){
-
-                                $custom_level = array(
-                                    'user_id' => $morder->user_id,
-                                    'membership_id' => $morder->membership_level->id,
-                                    'code_id' => $discount_code_id,
-                                    'initial_payment' => $morder->membership_level->initial_payment,
-                                    'billing_amount' => $morder->membership_level->billing_amount,
-                                    'cycle_number' => $morder->membership_level->cycle_number,
-                                    'cycle_period' => $morder->membership_level->cycle_period,
-                                    'billing_limit' => $morder->membership_level->billing_limit,
-                                    'trial_amount' => $morder->membership_level->trial_amount,
-                                    'trial_limit' => $morder->membership_level->trial_limit,
-                                    'startdate' => $startdate,
-                                    'enddate' => $enddate);
-
-                                pmpro_changeMembershipLevel($custom_level, $morder->user_id);
-                            }
-                        }
-
-                    }
-                    echo "OK";
-                    exit;
-                }
-                catch (JsonException $e) {
-                    wp_die('Invalid JSON payload', '', ['response' => 400]);
-                }
-            }
-            
-            catch (\Throwable $e) {
-                wp_die('Internal server error', '', ['response' => 500]);
-            }
+            $status = (new \CoinsnapPMPro\Webhook\WebhookHandler($provider, $secret, $statuses))->handle(
+                (string) file_get_contents('php://input'),
+                isset($_SERVER[$header]) ? (string) wp_unslash($_SERVER[$header]) : '',
+                time()
+            );
+            status_header($status);
+            echo $status === 200 ? 'OK' : ($status === 401 ? 'Unauthorized' : 'Retry');
+            exit;
 	}
         
+        // Throws when the API can't be asked; the caller must not treat that as "no webhook".
         public static function webhookExists(string $apiUrl, string $apiKey, string $storeId): bool {
-            $whClient = new Webhook( $apiUrl, $apiKey );
-            if ($storedWebhook = get_option( 'pmpro_coinsnap_webhook')) {
+            $whClient = new Webhook($apiUrl, $apiKey);
+            $stored = get_option('pmpro_coinsnap_webhook');
 
+            if (is_array($stored) && !empty($stored['id']) && !empty($stored['secret'])) {
                 try {
-                    $existingWebhook = $whClient->getWebhook( $storeId, $storedWebhook['id'] );
-
-                    if($existingWebhook->getData()['id'] === $storedWebhook['id'] && strpos( $existingWebhook->getData()['url'], $storedWebhook['url'] ) !== false){
+                    $existing = $whClient->getWebhook($storeId, (string) $stored['id']);
+                    if (strpos((string) ($existing->getData()['url'] ?? ''), self::get_webhook_url()) !== false) {
                         return true;
                     }
-                }
-                catch (\Throwable $e) {
-                    $errorMessage = __( 'Error fetching existing Webhook. Message: ', 'coinsnap-for-paid-memberships-pro' ).$e->getMessage();
-                }
-            }
-            try {
-                $storeWebhooks = $whClient->getWebhooks( $storeId );
-                foreach($storeWebhooks as $webhook){
-                    if(strpos( $webhook->getData()['url'], self::get_webhook_url() ) !== false){
-                        $whClient->deleteWebhook( $storeId, $webhook->getData()['id'] );
+                } catch (\Coinsnap\Exception\RequestException $e) {
+                    if (!in_array($e->getCode(), [400, 404], true)) {
+                        throw $e;
                     }
                 }
             }
-            catch (\Throwable $e) {
-                $errorMessage = sprintf( 
-                    /* translators: 1: StoreId */
-                    __( 'Error fetching webhooks for store ID %1$s Message: ', 'coinsnap-for-paid-memberships-pro' ), $storeId).$e->getMessage();
+            // Remove webhooks of ours whose secret this site does not hold.
+            foreach ($whClient->getWebhooks($storeId) as $webhook) {
+                if (strpos((string) $webhook->getData()['url'], self::get_webhook_url()) !== false) {
+                    try {
+                        $whClient->deleteWebhook($storeId, $webhook->getData()['id']);
+                    } catch (\Throwable $e) {
+                        error_log('Coinsnap: a stale webhook could not be deleted');
+                    }
+                }
             }
-
             return false;
         }
 
-        public static function registerWebhook(string $apiUrl, $apiKey, $storeId){
+        public static function registerWebhook(string $apiUrl, $apiKey, $storeId): bool {
             try {
-                $whClient = new Webhook( $apiUrl, $apiKey );
+                $whClient = new Webhook($apiUrl, $apiKey);
                 $webhook_events = (self::get_payment_provider() === 'btcpay')? self::BTCPAY_WEBHOOK_EVENTS : self::COINSNAP_WEBHOOK_EVENTS;
-                $webhook = $whClient->createWebhook(
-                    $storeId,   //$storeId
-                    self::get_webhook_url(), //$url
-                    $webhook_events,   //$specificEvents
-                    null    //$secret
-                );
-
-                update_option(
-                    'pmpro_coinsnap_webhook',
-                    [
-                        'id' => $webhook->getData()['id'],
-                        'secret' => $webhook->getData()['secret'],
-                        'url' => $webhook->getData()['url']
-                    ]
-                );
-
-                return $webhook;
-
+                $webhook = $whClient->createWebhook($storeId, self::get_webhook_url(), $webhook_events, null)->getData();
             }
             catch (\Throwable $e) {
-                $errorMessage = __('Error creating a new webhook on Coinsnap instance: ', 'coinsnap-for-paid-memberships-pro' ) . $e->getMessage();
+                error_log(sprintf('Coinsnap: the webhook could not be registered (status %d)', (int) $e->getCode()));
+                return false;
             }
-
-            return null;
+            if (empty($webhook['id']) || empty($webhook['secret'])) {
+                return false;
+            }
+            update_option('pmpro_coinsnap_webhook', ['id' => $webhook['id'], 'secret' => $webhook['secret'], 'url' => $webhook['url'] ?? self::get_webhook_url()], false);
+            return true;
         }
-    }
+
+        // The stored key is never printed; an empty field keeps it.
+        public static function renderApiKeyField(string $id, string $stored) {
+            $hint = ($stored !== '') ? sprintf(
+                /* translators: 1: last characters of the stored API key */
+                __('A key ending in %1$s is saved. Leave empty to keep it.', 'coinsnap-for-paid-memberships-pro'),
+                substr($stored, -4)
+            ) : '';
+            printf(
+                '<input type="password" id="%1$s" name="%1$s" value="" autocomplete="new-password" class="regular-text code" /><p class="description">%2$s</p>',
+                esc_attr($id),
+                esc_html($hint)
+            );
+        }
+
+        public static function noteBtcpayUrlChange($value, $old) {
+            if ((string) $value !== (string) $old) {
+                self::$btcpayUrlChanged = true;
+            }
+            return $value;
+        }
+
+        // Runs on the settings form save, where an empty key field means "keep the saved key".
+        public static function keepStoredApiKey($value, $old, $option) {
+            $field = substr((string) $option, strlen('pmpro_'));
+            if (!is_admin() || !isset($_POST[$field]) || trim((string) $value) !== '') {
+                return $value;
+            }
+            // A key is never sent to a server it was not created on.
+            if ($field === 'btcpay_api_key' && self::$btcpayUrlChanged) {
+                return '';
+            }
+            return $old;
+        }
+}
