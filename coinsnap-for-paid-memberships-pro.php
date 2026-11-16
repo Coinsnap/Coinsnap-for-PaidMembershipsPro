@@ -31,6 +31,12 @@ if (!function_exists('is_plugin_active')) {
     include_once(ABSPATH . 'wp-admin/includes/plugin.php');
 }
 
+// When invoice records started: webhooks for older orders without one are accepted only shortly after.
+add_action('init', function () {
+    if (!get_option('coinsnappmpro_records_since')) {
+        update_option('coinsnappmpro_records_since', time(), true);
+    }
+});
 require_once(dirname(__FILE__) . "/library/loader.php");
 require_once(dirname(__FILE__) . "/includes/Signature.php");
 require_once(dirname(__FILE__) . "/includes/InvoiceDecision.php");

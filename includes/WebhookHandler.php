@@ -60,6 +60,11 @@ class WebhookHandler
         }
 
         $recorded = $order['invoices'];
+        // Without a record, only invoices open at the upgrade are accepted, for one day after it.
+        if ((!is_array($recorded) || $recorded === []) && !$this->legacyAllowed()) {
+            $this->logSecurity('no invoice record for this order', $invoiceId);
+            return 200;
+        }
         if (is_array($recorded) && $recorded !== [] && !isset($recorded[$invoiceId])) {
             $this->logSecurity('invoice not created for this order', $invoiceId);
             return 200;
@@ -228,5 +233,11 @@ class WebhookHandler
         // The invoice id comes from the request.
         $id = substr((string) preg_replace('/[^A-Za-z0-9_-]/', '', $invoiceId), 0, 64);
         return sprintf('Coinsnap %s webhook reason=%s invoice=%s', $level, $reason, $id !== '' ? $id : '-');
+    }
+
+    protected function legacyAllowed(): bool
+    {
+        $since = (int) get_option('coinsnappmpro_records_since', 0);
+        return $since > 0 && time() - $since < DAY_IN_SECONDS;
     }
 }
