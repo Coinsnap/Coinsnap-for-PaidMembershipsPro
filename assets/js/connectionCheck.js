@@ -1,6 +1,5 @@
 jQuery(function ($) {
     
-    console.log('Connection check is activated');
     
     let connectionCheckElement = '';
     

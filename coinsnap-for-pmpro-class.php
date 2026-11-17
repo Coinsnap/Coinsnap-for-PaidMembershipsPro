@@ -10,6 +10,7 @@ use Coinsnap\Client\Webhook;
         public const COINSNAP_WEBHOOK_EVENTS = ['New','Expired','Settled','Processing','Invalid'];
         public const BTCPAY_WEBHOOK_EVENTS = ['InvoiceCreated','InvoiceExpired','InvoiceSettled','InvoiceProcessing','InvoiceInvalid'];
         private static $btcpayUrlChanged = false;
+        private static $btcpayKeyRefused = false;
 			
 	public function __construct($gateway = null){
             $this->gateway = $gateway;
@@ -38,6 +39,7 @@ use Coinsnap\Client\Webhook;
                     add_filter('pre_update_option_pmpro_btcpay_server_url', ['PMProGateway_coinsnap', 'noteBtcpayUrlChange'], 10, 2);
                     add_filter('pre_update_option_pmpro_coinsnap_api_key', ['PMProGateway_coinsnap', 'keepStoredApiKey'], 10, 3);
                     add_filter('pre_update_option_pmpro_btcpay_api_key', ['PMProGateway_coinsnap', 'keepStoredApiKey'], 10, 3);
+                    add_filter('pre_update_option_pmpro_btcpay_api_key', ['PMProGateway_coinsnap', 'checkPastedBtcpayKey'], 11, 2);
             }
             
             
@@ -67,58 +69,30 @@ use Coinsnap\Client\Webhook;
                 exit();
             }
 
-            $data = [];
-            $data['apiKey'] = isset($_POST['apiKey']) ? sanitize_text_field(wp_unslash($_POST['apiKey'])) : null;
-            if (isset($_POST['permissions']) && is_array($_POST['permissions'])) {
-                foreach (array_map('sanitize_text_field', wp_unslash($_POST['permissions'])) as $key => $value) {
-                    $data['permissions'][$key] = $value;
-                }
-            }
-
-            try {
-                $keyWorks = !empty($data['apiKey']) && count((new \Coinsnap\Client\Store($btcpay_server_url, $data['apiKey']))->getStores()) > 0;
-            } catch (\Throwable $e) {
-                $keyWorks = false;
-            }
-            if (!$keyWorks) {
-                $notice->addNotice('error', __('Error on verifying redirected API Key with stored BTCPay Server url. Aborting API wizard. Please try again or continue with manual setup.', 'coinsnap-for-paid-memberships-pro'));
+            $apiKey = isset($_POST['apiKey']) ? sanitize_text_field(wp_unslash($_POST['apiKey'])) : '';
+            // What the key may do, and for which store, is asked from BTCPay; POSTed permissions are ignored.
+            $storeId = ($apiKey !== '') ? \CoinsnapPMPro\BtcpayKey::verify($btcpay_server_url, $apiKey) : null;
+            if ($storeId === null) {
+                $notice->addNotice('error', __('The API key from BTCPay Server was refused. It must be limited to one store and have only the permissions this plugin asks for. Please try again or continue with manual setup.', 'coinsnap-for-paid-memberships-pro'));
                 wp_redirect($CoinsnapBTCPaySettingsUrl);
                 exit();
             }
 
-            if (isset($data['apiKey']) && isset($data['permissions'])) {
+            pmpro_setOption( "btcpay_server_url", $btcpay_server_url);
+            pmpro_setOption( "btcpay_api_key", $apiKey);
+            pmpro_setOption( "btcpay_store_id", $storeId);
+            pmpro_setOption( "coinsnap_provider", 'btcpay');
 
-                $apiData = new \Coinsnap\Client\BTCPayApiAuthorization($data);
-                if ($apiData->hasSingleStore() && $apiData->hasRequiredPermissions()) {
+            $notice->addNotice('success', __('Successfully received api key and store id from BTCPay Server API. Please finish setup by saving this settings form.', 'coinsnap-for-paid-memberships-pro'));
 
-                    pmpro_setOption( "btcpay_server_url", $btcpay_server_url);
-                    pmpro_setOption( "btcpay_api_key", $apiData->getApiKey());
-                    pmpro_setOption( "btcpay_store_id", $apiData->getStoreID());
-                    pmpro_setOption( "coinsnap_provider", 'btcpay');
-
-                    $notice->addNotice('success', __('Successfully received api key and store id from BTCPay Server API. Please finish setup by saving this settings form.', 'coinsnap-for-paid-memberships-pro'));
-
-                    // Register a webhook.
-                    if (self::registerWebhook( $btcpay_server_url, $apiData->getApiKey(), $apiData->getStoreID())) {
-                        $messageWebhookSuccess = __( 'Successfully registered a new webhook on BTCPay Server.', 'coinsnap-for-paid-memberships-pro' );
-                        $notice->addNotice('success', $messageWebhookSuccess);
-                    }
-                    else {
-                        $messageWebhookError = __( 'Could not register a new webhook on the store.', 'coinsnap-for-paid-memberships-pro' );
-                        $notice->addNotice('error', $messageWebhookError );
-                    }
-
-                    wp_redirect($CoinsnapBTCPaySettingsUrl);
-                    exit();
-                }
-                else {
-                    $notice->addNotice('error', __('Please make sure you only select one store on the BTCPay API authorization page.', 'coinsnap-for-paid-memberships-pro'));
-                    wp_redirect($CoinsnapBTCPaySettingsUrl);
-                    exit();
-                }
+            // Register a webhook.
+            if (self::registerWebhook( $btcpay_server_url, $apiKey, $storeId)) {
+                $notice->addNotice('success', __( 'Successfully registered a new webhook on BTCPay Server.', 'coinsnap-for-paid-memberships-pro' ));
+            }
+            else {
+                $notice->addNotice('error', __( 'Could not register a new webhook on the store.', 'coinsnap-for-paid-memberships-pro' ));
             }
 
-            $notice->addNotice('error', __('Error processing the data from Coinsnap. Please try again.', 'coinsnap-for-paid-memberships-pro'));
             wp_redirect($CoinsnapBTCPaySettingsUrl);
             exit();
         });
@@ -180,7 +154,7 @@ use Coinsnap\Client\Webhook;
                         }
                     }
                 }
-                catch (\Exception $e) {
+                catch (\Throwable $e) {
                     $response = [
                             'result' => false,
                             'message' => __('PMPro: API connection is not established', 'coinsnap-for-paid-memberships-pro')
@@ -189,7 +163,12 @@ use Coinsnap\Client\Webhook;
                 }
             }
             else {
-                $checkInvoice = $client->checkPaymentData(0,$pmpro_currency,'coinsnap','calculation');
+                try {
+                    $checkInvoice = $client->checkPaymentData(0,$pmpro_currency,'coinsnap','calculation');
+                }
+                catch (\Throwable $e) {
+                    $checkInvoice = ['result' => false];
+                }
             }
 
             if(isset($checkInvoice) && $checkInvoice['result']){
@@ -227,7 +206,7 @@ use Coinsnap\Client\Webhook;
                     $response['result'] = (bool)$webhook;
                     $response['message'] = $webhook ? $_message_connected.' ('.$connectionData.')' : $_message_disconnected.' (Webhook)';
                 }
-                catch (\Exception $e) {
+                catch (\Throwable $e) {
                     $response = [
                             'result' => false,
                             'message' => __('PMPro: API connection is not established', 'coinsnap-for-paid-memberships-pro')
@@ -259,16 +238,8 @@ use Coinsnap\Client\Webhook;
                     wp_send_json_error("Error validating BTCPayServer URL.");
                 }
 
-                $permissions = array_merge([
-                    'btcpay.store.canviewinvoices',
-                    'btcpay.store.cancreateinvoice',
-                    'btcpay.store.canviewstoresettings',
-                    'btcpay.store.canmodifyinvoices'
-                ],
-                [
-                    'btcpay.store.cancreatenonapprovedpullpayments',
-                    'btcpay.store.webhooks.canmodifywebhooks',
-                ]);
+                // Only what the plugin uses, for one store (strict + selectiveStores below).
+                $permissions = \CoinsnapPMPro\BtcpayKey::NEEDED_PERMISSIONS;
 
                 $state = wp_generate_password(32, false);
                 set_transient('coinsnappmpro_btcpay_state_' . $state, $host, 15 * MINUTE_IN_SECONDS);
@@ -304,6 +275,9 @@ use Coinsnap\Client\Webhook;
 
             if($page === 'pmpro-paymentsettings'){
 
+                // Results of the BTCPay connect callback.
+                (new \Coinsnap\Util\Notice())->showNotices();
+
                 $coinsnap_url = self::getApiUrl();
                 $coinsnap_api_key = self::getApiKey();
                 $coinsnap_store_id = self::getStoreId();
@@ -329,21 +303,12 @@ use Coinsnap\Client\Webhook;
                                 esc_html_e('PMPro: Established connection to Coinsnap Server', 'coinsnap-for-paid-memberships-pro');
                                 echo '</p></div>';
 
-                                if ( ! self::webhookExists( $coinsnap_url, $coinsnap_api_key, $coinsnap_store_id) ) {
-                                    if ( ! self::registerWebhook( $coinsnap_url, $coinsnap_api_key, $coinsnap_store_id ) ) {
-                                        echo '<div class="notice notice-error"><p>';
-                                        esc_html_e('PMPro: Unable to create webhook on Coinsnap Server', 'coinsnap-for-paid-memberships-pro');
-                                        echo '</p></div>';
-                                    }
-                                    else {
-                                        echo '<div class="notice notice-success"><p>';
-                                        esc_html_e('PMPro: Successfully registered webhook on Coinsnap Server', 'coinsnap-for-paid-memberships-pro');
-                                        echo '</p></div>';
-                                    }
-                                }
-                                else {
-                                    echo '<div class="notice notice-info"><p>';
-                                    esc_html_e('PMPro: Webhook already exists, skipping webhook creation', 'coinsnap-for-paid-memberships-pro');
+                                // A page view only shows the status. The webhook is checked and registered by the
+                                // connection check (AJAX, nonce and manage_options), never by a plain GET.
+                                $stored = get_option('pmpro_coinsnap_webhook');
+                                if (!is_array($stored) || empty($stored['secret'])) {
+                                    echo '<div class="notice notice-error"><p>';
+                                    esc_html_e('PMPro: No webhook is registered yet. It is registered by the connection check on this page.', 'coinsnap-for-paid-memberships-pro');
                                     echo '</p></div>';
                                 }
                             }
@@ -428,7 +393,8 @@ use Coinsnap\Client\Webhook;
 
             $statuses = pmpro_getOrderStatuses();
 
-            $coinsnap_expired_status = !empty($values['coinsnap_expired_status']) ? $values['coinsnap_expired_status'] : 'cancelled';
+            // Not "cancelled": PMPro 3 saves that status as "success".
+            $coinsnap_expired_status = (!empty($values['coinsnap_expired_status']) && $values['coinsnap_expired_status'] !== 'cancelled') ? $values['coinsnap_expired_status'] : 'error';
             $coinsnap_settled_status = !empty($values['coinsnap_settled_status']) ? $values['coinsnap_settled_status'] : 'success';				
             $coinsnap_processing_status = !empty($values['coinsnap_processing_status']) ? $values['coinsnap_processing_status'] : 'pending';
             
@@ -468,6 +434,11 @@ use Coinsnap\Client\Webhook;
                 <th scope="row" valign="top"><label for="btcpay_store_id"><?php esc_html_e('Store ID*', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
                 <td><input type="text" id="btcpay_store_id" name="btcpay_store_id" value="<?php echo esc_attr($values['btcpay_store_id'])?>" class="regular-text code" /></td>
             </tr>
+            <?php if (self::$btcpayKeyRefused) { ?>
+            <tr class="gateway gateway_btcpay">
+                <td colspan="2"><div class="notice notice-error inline"><p><?php esc_html_e('The BTCPay API key was not saved. It must be limited to the store ID above, with only the permissions this plugin needs (view and create invoices, view store settings, modify webhooks).', 'coinsnap-for-paid-memberships-pro'); ?></p></div></td>
+            </tr>
+            <?php } ?>
             <tr class="gateway gateway_btcpay">
                 <th scope="row" valign="top"><label for="btcpay_api_key"><?php esc_html_e('API Key*', 'coinsnap-for-paid-memberships-pro' );?>:</label></th>
                 <td><?php self::renderApiKeyField('btcpay_api_key', (string) $values['btcpay_api_key']); ?></td>
@@ -596,9 +567,14 @@ use Coinsnap\Client\Webhook;
                 }
             }
             else {
-                $checkInvoice = $client->checkPaymentData((float)$amount,strtoupper( $currency ));
+                try {
+                    $checkInvoice = $client->checkPaymentData((float)$amount,strtoupper( $currency ));
+                }
+                catch (\Throwable $e){
+                    $checkInvoice = array('result' => false,'error' => esc_html__( 'API connection is not established.', 'coinsnap-for-paid-memberships-pro' ));
+                }
             }
-            return $checkInvoice;
+            return $checkInvoice ?? array('result' => false,'error' => esc_html__( 'No payment method is configured on BTCPay server ', 'coinsnap-for-paid-memberships-pro' ));
                    
         }
 
@@ -770,11 +746,17 @@ use Coinsnap\Client\Webhook;
                 'expired' => (string) pmpro_getOption('coinsnap_expired_status'),
             ];
 
-            $status = (new \CoinsnapPMPro\Webhook\WebhookHandler($provider, $secret, $statuses))->handle(
-                (string) file_get_contents('php://input'),
-                isset($_SERVER[$header]) ? (string) wp_unslash($_SERVER[$header]) : '',
-                time()
-            );
+            try {
+                $status = (new \CoinsnapPMPro\Webhook\WebhookHandler($provider, $secret, $statuses))->handle(
+                    (string) file_get_contents('php://input'),
+                    isset($_SERVER[$header]) ? (string) wp_unslash($_SERVER[$header]) : '',
+                    time()
+                );
+            } catch (\Throwable $e) {
+                // No trace or message in the reply; the provider retries.
+                error_log('Coinsnap INFO webhook reason=retry: internal error invoice=-');
+                $status = 503;
+            }
             status_header($status);
             echo $status === 200 ? 'OK' : ($status === 401 ? 'Unauthorized' : 'Retry');
             exit;
@@ -839,6 +821,23 @@ use Coinsnap\Client\Webhook;
                 esc_attr($id),
                 esc_html($hint)
             );
+        }
+
+        // A pasted BTCPay key is saved only if BTCPay confirms it is limited to the configured store.
+        public static function checkPastedBtcpayKey($value, $old) {
+            $value = trim((string) $value);
+            if (!is_admin() || !isset($_POST['btcpay_api_key']) || $value === '' || ($value === (string) $old && !self::$btcpayUrlChanged)) {
+                return $value;
+            }
+            // PMPro saves the URL and the store ID before the key, from the same form.
+            $url = (string) pmpro_getOption('btcpay_server_url');
+            $storeId = (string) pmpro_getOption('btcpay_store_id');
+            if ($storeId !== '' && \CoinsnapPMPro\BtcpayKey::verify($url, $value, $storeId) !== null) {
+                return $value;
+            }
+            self::$btcpayKeyRefused = true;
+            // A refused key is not saved, and the old key never goes to a new URL.
+            return self::$btcpayUrlChanged ? '' : $old;
         }
 
         public static function noteBtcpayUrlChange($value, $old) {

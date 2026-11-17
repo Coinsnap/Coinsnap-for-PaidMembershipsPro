@@ -38,6 +38,7 @@ add_action('init', function () {
     }
 });
 require_once(dirname(__FILE__) . "/library/loader.php");
+require_once(dirname(__FILE__) . "/includes/BtcpayKey.php");
 require_once(dirname(__FILE__) . "/includes/Signature.php");
 require_once(dirname(__FILE__) . "/includes/InvoiceDecision.php");
 require_once(dirname(__FILE__) . "/includes/WebhookHandler.php");
