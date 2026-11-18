@@ -23,13 +23,16 @@ use Coinsnap\Client\Webhook;
             add_filter('pmpro_payment_options', array('PMProGateway_coinsnap', 'pmpro_payment_options'));
             add_filter('pmpro_payment_option_fields', array('PMProGateway_coinsnap', 'pmpro_payment_option_fields'), 10, 2);
             				
-            add_filter('pmpro_include_billing_address_fields', '__return_false');
-            add_filter('pmpro_include_payment_information_fields', '__return_false');
-            add_filter('pmpro_required_billing_fields', array('PMProGateway_coinsnap', 'pmpro_required_billing_fields'));
+            // Checkout changes only when this gateway is the one in use, as PMPro's own gateways do.
+            if (pmpro_getGateway() === 'coinsnap') {
+                add_filter('pmpro_include_billing_address_fields', '__return_false');
+                add_filter('pmpro_include_payment_information_fields', '__return_false');
+                add_filter('pmpro_required_billing_fields', array('PMProGateway_coinsnap', 'pmpro_required_billing_fields'));
+                add_filter('pmpro_checkout_default_submit_button', ['PMProGateway_coinsnap', 'pmpro_checkout_default_submit_button']);
+            }
             add_filter('pmpro_checkout_before_change_membership_level', ['PMProGateway_coinsnap', 'coinsnappmpro_checkout_before_change_membership_level'], 1, 2);
-            add_filter('pmpro_checkout_default_submit_button', ['PMProGateway_coinsnap', 'pmpro_checkout_default_submit_button']);
                 
-            add_action('pmpro_add_order',['PMProGateway_coinsnap', 'set_gateway_to_order']);
+            // The site's default gateway is chosen by the merchant in PMPro's payment settings, never changed by an order.
                 
             if (is_admin()) {
                     add_action('admin_notices', ['PMProGateway_coinsnap', 'coinsnap_notice']);
@@ -98,11 +101,6 @@ use Coinsnap\Client\Webhook;
         });
             
 	}
-        
-        public static function set_gateway_to_order($morder){
-            pmpro_setOption( "gateway", 'coinsnap');
-            update_option("pmpro_gateway", 'coinsnap');
-        }
         
         public static function enqueueAdminScripts() {
             
