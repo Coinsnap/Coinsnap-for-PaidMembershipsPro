@@ -11,11 +11,19 @@ class WebhookHandler
     // Orders still waiting for payment; "success" is PMPro's default for a new order object.
     private const OPEN = ['token', 'pending', 'review', ''];
 
-    public function __construct(
-        private string $provider,
-        private string $secret,
-        private array $statuses
-    ) {
+    /** @var string */
+    private $provider;
+    /** @var string */
+    private $secret;
+    /** @var array */
+    private $statuses;
+
+    // No constructor promotion: the plugin supports PHP 7.4.
+    public function __construct(string $provider, string $secret, array $statuses)
+    {
+        $this->provider = $provider;
+        $this->secret = $secret;
+        $this->statuses = $statuses;
     }
 
     public function handle(string $rawBody, string $signatureHeader, int $nowSeconds): int
@@ -113,6 +121,10 @@ class WebhookHandler
             return;
         }
         $target = ($decision === InvoiceDecision::PROCESSING) ? $this->statuses['processing'] : $this->statuses['expired'];
+        // PMPro 3 saves "cancelled" as "success", which would show an unpaid order as paid.
+        if ($target === 'cancelled') {
+            $target = 'error';
+        }
         // Only a settled, verified invoice may mark an order paid, whatever the settings say.
         if (!in_array($order['status'], self::OPEN, true) || $target === '' || $target === 'success' || $target === $order['status']) {
             $this->logInfo('no change', $invoiceId);
@@ -176,6 +188,10 @@ class WebhookHandler
         $enddate = 'NULL';
         if (!empty($morder->membership_level->expiration_number)) {
             $enddate = "'" . date_i18n('Y-m-d', strtotime('+ ' . $morder->membership_level->expiration_number . ' ' . $morder->membership_level->expiration_period, current_time('timestamp'))) . "'";
+        } elseif (self::isRecurring($morder->membership_level)) {
+            // This gateway takes one payment and never charges again. Without an end date one payment
+            // for a recurring level would give access forever, so it covers one billing period.
+            $enddate = "'" . date_i18n('Y-m-d', strtotime('+ ' . (int) $morder->membership_level->cycle_number . ' ' . $morder->membership_level->cycle_period, current_time('timestamp'))) . "'";
         }
         $enddate = apply_filters('pmpro_checkout_end_date', $enddate, $morder->user_id, $morder->membership_level, $startdate);
 
@@ -193,6 +209,14 @@ class WebhookHandler
             'startdate' => $startdate,
             'enddate' => $enddate,
         ], $morder->user_id);
+    }
+
+    public static function isRecurring($level): bool
+    {
+        return is_object($level)
+            && (float) ($level->billing_amount ?? 0) > 0
+            && (int) ($level->cycle_number ?? 0) > 0
+            && in_array((string) ($level->cycle_period ?? ''), ['Hour', 'Day', 'Week', 'Month', 'Year'], true);
     }
 
     protected function lock(int $id): bool
