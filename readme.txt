@@ -4,7 +4,7 @@ Tags: bitcoin, lightning, paid memberships pro, membership, btcpay
 Requires at least: 5.2
 Tested up to: 7.0.4
 Requires PHP: 7.4
-Stable tag: 1.0.6
+Stable tag: 1.1.0
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -215,6 +215,26 @@ Coinsnap charges a 1% transaction fee.
 10. Successful payment and membership activation
 
 == Changelog ==
+
+= 1.1.0 :: 2026-11-16 =
+* Security: Webhooks are verified with the timestamped X-Coinsnap-Signature header (Coinsnap) or BTCPay-Sig (BTCPay Server), with a timing-safe comparison. A missing webhook secret rejects every webhook.
+* Security: A membership is granted only when the invoice is settled, was created by this plugin for that order, and matches the amount and currency it asked for; and only once per order. Before, any invoice in the store with a matching order ID changed the order, and every repeated webhook granted the membership again.
+* Security: "Processing" no longer grants the membership (it defaulted to success). Paid and refunded orders are never changed by a later webhook. BTCPay invoices marked settled by hand are not accepted.
+* Security: If the invoice cannot be created at checkout, the checkout stops with an error. Before, an error at this step could let Paid Memberships Pro grant the membership without a payment.
+* Security: The BTCPay Server setup callback only accepts a one-time code issued by the settings page, and the server URL is saved only together with a verified key. Before, anyone could post an API key and switch the site to their own BTCPay store.
+* Security: The API key fields no longer show the saved key; leave them empty to keep it. A BTCPay key is not kept when the server URL changes.
+* Security: The library no longer sends an Access-Control-Allow-Origin: * header, and API error replies are no longer copied into error messages.
+* Security: The BTCPay Server setup callback asks BTCPay what the received key may do (GET /api/v1/api-keys/current) and accepts only a key limited to one store with the permissions the plugin needs. Before, it trusted the permissions and store ID posted with the key, so someone with an account on the merchant's BTCPay server could save their own store's key.
+* Security: A BTCPay API key pasted on the settings page is saved only if BTCPay confirms it is limited to the configured store. The setup wizard asks only for the permissions the plugin uses.
+* Security: Viewing the payment settings page no longer checks, deletes or re-registers the webhook; only the connection check (administrator and nonce) does.
+* Security: One payment for a recurring level gives access for one billing period. Before, the membership never ended, because this gateway does not charge again.
+* Fix: An expired invoice no longer marks an unpaid order as "success". Paid Memberships Pro 3 saves the old default Expired status "cancelled" as "success"; it is now saved as "error".
+* Fix: The plugin runs on PHP 7.4 again (the new webhook classes used PHP 8 syntax). Webhook errors return 503 without details. uninstall.php removes the plugin's own settings, keys and webhook secret.
+* Fix: Invoices are created for the order total, tax included. Before, they were created for the subtotal, so tax was never collected.
+* Fix: Orders waiting for payment are saved as "token" instead of "success".
+* Fix: Checkout with a discount code no longer calls an undefined function (now()).
+* Fix: The checkout step no longer runs for other gateways' checkouts.
+* Fix: A payment server outage no longer deletes and re-registers the webhook. The exchange rate lookup gives up after 3 tries instead of retrying forever.
 
 = 1.0.6 :: 2026-05-24 =
 * Compatibility with Paid Memberships Pro 3.7.3 is tested.
