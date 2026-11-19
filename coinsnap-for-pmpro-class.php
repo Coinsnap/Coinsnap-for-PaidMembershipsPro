@@ -617,13 +617,8 @@ use Coinsnap\Client\Webhook;
                 $buyerEmail = $current_user->user_email;
                 $buyerName =  $current_user->user_firstname . ' ' . $current_user->user_lastname;
 						    	
-                $metadata = [];
-                $metadata['orderNumber'] = $order->id;
-                $metadata['customerName'] = $buyerName;
-            
-                if(self::get_payment_provider() === 'btcpay') {
-                    $metadata['orderId'] = $order->id;
-                }
+                // Order data and the member's details. The plugin has no setting for customer data, so they are always sent.
+                $metadata = $this->coinsnappmpro_invoiceMetadata($order, $buyerEmail, $buyerName);
                             
                 $redirectAutomatically = (pmpro_getOption( 'coinsnap_autoredirect') > 0 )? true : false;
                 $walletMessage = '';
@@ -701,6 +696,79 @@ use Coinsnap\Client\Webhook;
             }
         }
         
+        // Invoice metadata. orderId must stay the PMPro order ID: the webhook loads the order by it
+        // (Coinsnap: top-level orderId, which the backend also copies to metadata.orderId; BTCPay: metadata.orderId).
+        public function coinsnappmpro_invoiceMetadata($order, $buyerEmail, string $buyerName): array {
+            $billing = (isset($order->billing) && is_object($order->billing)) ? $order->billing : new \stdClass();
+            $level = (isset($order->membership_level) && is_object($order->membership_level)) ? $order->membership_level : null;
+            if ($level === null && !empty($order->membership_id) && function_exists('pmpro_getLevel')) {
+                $level = pmpro_getLevel((int) $order->membership_id);
+            }
+            $levelName = ($level && isset($level->name)) ? wp_strip_all_tags((string) $level->name) : '';
+            $levelId = (int) ($order->membership_id ?? 0);
+
+            $discountCode = '';
+            if (!empty($order->discount_code)) {
+                $discountCode = is_object($order->discount_code) ? (string) ($order->discount_code->code ?? '') : (string) $order->discount_code;
+            } elseif (method_exists($order, 'getDiscountCode')) {
+                $code = $order->getDiscountCode();
+                $discountCode = (is_object($code) && isset($code->code)) ? (string) $code->code : '';
+            }
+
+            $subtotal = (float) ($order->subtotal ?? 0);
+            $tax = (float) ($order->tax ?? 0);
+            $total = (float) ((isset($order->total) && '' !== (string) $order->total) ? $order->total : $subtotal);
+            $recurring = $level && isset($level->billing_amount, $level->cycle_number) && (float) $level->billing_amount > 0 && (int) $level->cycle_number > 0;
+
+            $name = trim($buyerName);
+            if ($name === '') {
+                $name = trim((string) ($billing->name ?? ''));
+            }
+
+            return self::coinsnappmpro_withoutEmptyValues([
+                'orderId' => (string) $order->id,
+                'orderNumber' => (string) ($order->code ?? '') !== '' ? (string) $order->code : (string) $order->id,
+                'orderUrl' => admin_url('admin.php?page=pmpro-orders&order=' . (int) $order->id),
+                'customerName' => $name,
+                'buyerName' => $name,
+                'buyerEmail' => is_string($buyerEmail) ? $buyerEmail : '',
+                'buyerPhone' => (string) ($billing->phone ?? ''),
+                'buyerAddress1' => (string) ($billing->street ?? ''),
+                'buyerAddress2' => (string) ($billing->street2 ?? ''),
+                'buyerCity' => (string) ($billing->city ?? ''),
+                'buyerState' => (string) ($billing->state ?? ''),
+                'buyerZip' => (string) ($billing->zip ?? ''),
+                'buyerCountry' => (string) ($billing->country ?? ''),
+                'itemDesc' => $levelName !== '' ? sprintf('Membership: %s', $levelName) : '',
+                'itemCode' => $levelId > 0 ? (string) $levelId : '',
+                'lineItems' => [self::coinsnappmpro_withoutEmptyValues([
+                    'name' => $levelName,
+                    'productId' => $levelId > 0 ? $levelId : null,
+                    'quantity' => 1,
+                    'price' => $subtotal,
+                    'total' => $total,
+                ])],
+                'planName' => $levelName,
+                'membershipLevelId' => $levelId > 0 ? $levelId : null,
+                'recurring' => $recurring ? true : null,
+                'billingAmount' => $recurring ? (float) $level->billing_amount : null,
+                'billingPeriod' => $recurring ? (int) $level->cycle_number . ' ' . (string) $level->cycle_period : '',
+                'userId' => (int) ($order->user_id ?? 0) > 0 ? (int) $order->user_id : null,
+                'couponCodes' => $discountCode !== '' ? [$discountCode] : [],
+                'taxTotal' => $tax > 0 ? $tax : null,
+                'platform' => 'paidmembershipspro',
+                'pluginVersion' => COINSNAPPMPRO_PLUGIN_VERSION,
+                'language' => function_exists('determine_locale') ? determine_locale() : get_locale(),
+            ]);
+        }
+
+        // Drops null, '' and [] so the invoice carries only values that exist.
+        private static function coinsnappmpro_withoutEmptyValues(array $values): array {
+            return array_filter($values, function ($value) {
+                return $value !== null && $value !== '' && $value !== [];
+            });
+        }
+
         //  =============================== API OPTIONS =======================================
 		
 	public static function get_payment_provider() {
